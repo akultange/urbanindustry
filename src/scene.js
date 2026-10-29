@@ -411,10 +411,12 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     // turned between upright and wide: the wall re-arranges its columns
     if (state.mode === 'wall' && state.shelves && isPortrait() !== !!state.portrait) layout('wall');
     if (state.held) return;
-    if (state.focus >= 0) state.cam = cameraFor('focus', state.focus);
-    else if (state.mode === 'walk') state.cam = cameraFor('walk', -1);
-    else state.cam = cameraFor('overview');
-    state.camT = 1;
+    const to = state.focus >= 0 ? cameraFor('focus', state.focus) : state.mode === 'walk' ? cameraFor('walk', -1) : cameraFor('overview');
+    // mid-flight (the pull-back after the loader, a move onto a pair) the camera keeps flying, only to the
+    // re-fitted spot: snapping here cut the pull-back off as it started (app.js re-fits when the webfonts are in,
+    // and a slow GPU drops the resolution), so the loader landed straight on the wide wall
+    if (state.camT < 1 && state.camTo) state.camTo = to;
+    else { state.cam = to; state.camT = 1; }
     wake();
   }
 
