@@ -56,7 +56,7 @@ const SWATCHES = [
   ['Birch', 'Mexico 66', '#d9d1be'], ['Cognac', '530 SL', '#a0714f'],
 ];
 
-export function createReel({ root, lang = 'ka', phone = false, reduced = false, short = false, anchorIndex, pairs }) {
+export function createReel({ root, lang = 'ka', phone = false, isPhone = null, reduced = false, short = false, anchorIndex, pairs }) {
   const canvas = root.querySelector('canvas');
   let g = canvas.getContext('2d', { alpha: false });
   const hud = Object.fromEntries([...root.querySelectorAll('[data-hud]')].map(el => [el.dataset.hud, el]));
@@ -72,6 +72,7 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
   // ---------------------------------------------------------------- geometry: the pair's texture layer, centred on screen
   function measure() {
     W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+    if (isPhone) phone = isPhone();   // the layout follows the window (it can change before the cuts start)
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     const r = pairs[anchorIndex].rect || [0.04, 0.06, 0.96, 0.99];
     const cw = phone ? W * 0.8 : Math.min(W * 0.4, H * 0.62);
@@ -404,7 +405,7 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
     const lw = b.bw + b.over * 2, lh = b.lidH, key = `${lw.toFixed(1)}x${lh.toFixed(1)}@${dpr}`;
     if (BAND && BAND.key === key) return BAND;
     const mk = withPrint => {
-      const c = document.createElement('canvas'); c.width = Math.ceil(lw * dpr); c.height = Math.ceil(lh * dpr);
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(lw * dpr)); c.height = Math.max(1, Math.ceil(lh * dpr));
       const q = c.getContext('2d'); q.scale(c.width / lw, c.height / lh);
       const gr = q.createLinearGradient(0, 0, 0, lh); gr.addColorStop(0, '#1d1f23'); gr.addColorStop(1, '#121316');
       q.fillStyle = gr; q.fillRect(0, 0, lw, lh);
@@ -599,7 +600,9 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
   function drawBox(t = 0, nudge = 0) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     fill(BLUE);
-    const b = boxGeom(); fitBox(b);
+    const b = boxGeom();
+    if (!(b.bw > 2 && b.bh > 2)) return;   // no room yet (a 0 x 0 window): resize() draws it again
+    fitBox(b);
     const glow = Math.max(0.28 * nudge, sstep(0.05, 0.35, t) * (1 - sstep(0.78, 1.15, t)));
     // the box falls away (gravity: slow, then fast) as the lid flies off: the box splits open around the pair
     const drop = iQuad((t - 0.36) / 0.7);
@@ -631,6 +634,7 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
   // ---------------------------------------------------------------- one cut
   function draw(c) {
     current = c;
+    if (!(W > 2 && H > 2)) return;   // nothing to draw into yet; resize() redraws the current cut
     canvas.classList.add('drawn');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const [shot, neg, tone, arg] = c;
@@ -689,7 +693,9 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
       q.querySelector('.r-q').textContent = C().gateQ;
       q.querySelector('.r-open span').textContent = C().gateOpen;
       q.querySelector('.r-mute').textContent = C().gateMute;
-      const place = () => { const b = boxGeom(); q.style.top = `${Math.round(b.y1 + Math.max(26, b.bh * 0.32))}px`; };
+      // the window can still be 0 x 0 when this runs (a page loaded in a hidden pane): resize() lays it out again
+      const place = () => { const b = boxGeom(); if (b.bw > 2) q.style.top = `${Math.round(b.y1 + Math.max(26, b.bh * 0.32))}px`; };
+      this._gatePlace = place;
       place();
       let target = 0, anim = 0;
       const frame = () => { gateNudge += (target - gateNudge) * 0.25; drawBox(0, gateNudge); anim = Math.abs(target - gateNudge) > 0.01 ? requestAnimationFrame(frame) : 0; };
@@ -709,7 +715,6 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
         root.addEventListener('pointermove', move);
         root.addEventListener('click', onClick, true);
         addEventListener('keydown', onKey, true);
-        this._gatePlace = place;
       });
     },
     // the lid comes off, light comes out of the box, the pair rises out of it (OPEN_MS); then the reel starts.

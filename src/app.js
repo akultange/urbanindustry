@@ -437,7 +437,7 @@ async function boot() {
   let reel = null;
   if (!(window.AudioContext || window.webkitAudioContext)) soundBtn.hidden = true;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, reduced: false, short: params.has('short'), anchorIndex: ANCHOR, pairs });
+    reel = createReel({ root: reelEl, lang, phone, isPhone: () => phoneQ.matches, reduced: false, short: params.has('short'), anchorIndex: ANCHOR, pairs });
     reelCopy = reel.copy; liveReel = reel;
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());
@@ -570,6 +570,8 @@ async function boot() {
   // (with reduced motion the reel fades onto the wall instead: no zoom)
   const anchorBmp = await anchorP;
   if (anchorBmp && !hiDone.has(ANCHOR)) { scene.setShoeImage(ANCHOR, anchorBmp, true); hiDone.add(ANCHOR); }
+  // the window may have changed between phone and desktop while the loader ran
+  if (phoneQ.matches !== phone) { phone = phoneQ.matches; margins(); scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR }); }
   scene.resize();
   if (matchCut) {
     scene.introShot(ANCHOR, reel.anchorRect());
