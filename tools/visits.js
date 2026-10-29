@@ -1,6 +1,6 @@
-// When the box shows. Computer: first visit asks; after it's been opened, a reload goes straight into the
-// loader (with sound if it was opened with sound and the browser lets the page start it), a new tab asks
-// again if the browser blocks sound there. Phone: the box every time.
+// When the box shows. Computer: the first visit asks; once it's been opened, every visit goes straight into
+// the loader (with sound if it was opened with sound and the browser lets the page start it, silent
+// otherwise). Phone: the box every time.
 // usage: node tools/visits.js <url>
 const puppeteer = require('puppeteer-core');
 const m = require('@sparticuz/chromium'); const chromium = m.default || m;

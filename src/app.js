@@ -471,15 +471,16 @@ async function boot() {
   const bitmaps = [];
   const lo = Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 512)).then(b => { bitmaps[i] = b; reel?.set('pair', b, i); scene?.setShoeImage(i, b, false); tickLoad(); })));
 
-  // The box. Browsers only let a page start sound after a click, and opening the box is that click.
+  // The box. Browsers only let a page start sound after a click on it, and opening the box is that click.
   // Phones and tablets ask every visit. On a computer the box shows until it has been opened once; after
-  // that the loader starts by itself, with sound if they chose it and the browser lets the page start it
-  // (Chrome and Edge do on a reload after a click on the site). When it doesn't, the box asks again.
+  // that the loader starts straight away: with sound if they chose sound and the browser lets the page
+  // start it on its own, otherwise silent with "Sound on" in the loader (and sound back on their first click).
+  // Chrome treats a reload as a new page, so a reload usually starts silent.
   const touch = matchMedia('(hover: none) and (pointer: coarse)').matches;
   let showBox = !!reel && !capture && !params.has('nogate');
   if (showBox && !touch && store.get('opened', false)) {
-    if (!store.get('sound', false)) showBox = false;
-    else if (await sound.tryStart()) { setSoundUI(true); showBox = false; }
+    showBox = false;
+    if (store.get('sound', false) && await sound.tryStart()) setSoundUI(true);
   }
   const gateP = showBox
     ? reel.gate({ onOpen: withSound => { store.set('opened', true); return withSound ? soundOn() : (soundOff(), null); } })
