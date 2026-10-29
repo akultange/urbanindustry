@@ -12,7 +12,7 @@ PUBLIC = sys.argv[1] if len(sys.argv) > 1 else ''
 
 
 def font_subset(path, text=None, unicodes=None, keep_axes=True):
-    f = TTFont(path)
+    f = TTFont(path, recalcTimestamp=False)  # same bytes every build, so the hashed font URLs stay cached
     opts = subset.Options()
     opts.flavor = 'woff2'
     opts.layout_features = ['kern', 'liga', 'calt', 'tnum', 'lnum', 'ccmp', 'locl', 'mark', 'mkmk']
