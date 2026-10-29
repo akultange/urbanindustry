@@ -347,6 +347,8 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
 
   function tick(now) {
     raf = requestAnimationFrame(tick);
+    // the clock starts on the first frame actually shown (a background tab may not draw for a while)
+    if (!t0) t0 = now;
     const el = now - t0;
     if (holding) {
       // still loading: hold the night wall (a still frame, nothing flashing) until the app says land
@@ -387,12 +389,12 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
       build();
       return new Promise(res => {
         onEnd = res;
-        t0 = performance.now(); idx = -1;
+        t0 = 0; idx = -1;
         raf = requestAnimationFrame(tick);
       });
     },
     // keep the wall running until land() is called
-    hold() { if (!holding) { holding = true; t0 = performance.now(); } },
+    hold() { if (!holding) { holding = true; t0 = 0; } },
     skip() {
       if (done || skipped) return;
       skipped = true; done = true;

@@ -429,8 +429,8 @@ async function boot() {
   const bitmaps = [];
   const lo = Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 512)).then(b => { bitmaps[i] = b; reel?.set('pair', b, i); scene?.setShoeImage(i, b, false); tickLoad(); })));
 
-  // let the first frame paint before the GPU work starts
-  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  // let the first frame paint before the GPU work starts (a background tab gets no frames: don't wait for one)
+  await Promise.race([new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))), sleep(150)]);
   try { scene = createScene(canvas, { catalog, tier: phone ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay, manual: capture }); } catch (e) { console.error(e); scene = null; }
   bitmaps.forEach((b, i) => b && scene && scene.setShoeImage(i, b, false));
   const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + 30), 84); };
