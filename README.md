@@ -36,8 +36,10 @@ The reel re-cuts every 133 ms, so its order was chosen to stay under WCAG 2.3.1:
 - Fonts are self-hosted and subset: Rubik for Latin (close to their rounded wordmark), Noto Sans Georgian (variable width) for Georgian, and Inter Tight only for arrows.
 
 ```
-src/        index.html, style.css, app.js, reel.js, sound.js, scene.js, shaders.js, gl.js, catalog.json, logo.json
+src/        index.html, style.css, app.js, reel.js, sound.js, scene.js, shaders.js, gl.js, catalog.json, logo.json,
+            admin/ (index.html, admin.css, admin.js, cutout.js, github.js, store.js)
 assets/     shoes/ (cut-outs 512 + 1024), photos/ (their feed), reel/ (loader assets), img/og.jpg
+vendor/     u2netp.onnx (the admin's cut-out model)
 tools/      build.py, shoot.js / shoot2.js / live.js / gate.js / visits.js / hover.js / swipe.js (headless checks),
             reel_video.js (films the box and the loader with its score, 1080p 60 fps), score.js (re-renders just the score),
             win/ (the same film on your own graphics card in Chrome: 4K, one PowerShell command),
@@ -45,9 +47,21 @@ tools/      build.py, shoot.js / shoot2.js / live.js / gate.js / visits.js / hov
 docs/       the built site, served by GitHub Pages
 ```
 
-## Change a pair, a price or a size
+## The shop's admin (`/admin`)
 
-Edit `src/catalog.json`: `price`, `sizes`, `soldOut`, `desc`, `photos`. Then rebuild:
+`https://akultange.github.io/urbanindustry/admin/` is where the shop runs the wall themselves, in Georgian or English, on a phone or a computer:
+
+- **Add a pair from a photo.** One shoe from the side works best. The background comes off in the browser: U²-Net (the small model, `vendor/u2netp.onnx`, Apache-2.0) finds the pair, run with onnxruntime-web (WASM, MIT), then the edge is pulled onto the photo's own edges (a guided filter), gaps inside the outline are filled so white leather on a white backdrop stays, a soft shadow goes with the backdrop, and the backdrop's colour is taken out of the edge so there's no fringe on the dark wall (`src/admin/cutout.js`). The tool is about 16 MB, fetched the first time and cached. A photo that's already cut out is used as it is. The result is laid out like the original ten (1024×640 and 512×320 layers, `rect`, `base`).
+- **Price, colour, description, sizes in stock and sold out, feed photos.** Tap a size to cycle: not carried, in stock, sold out.
+- **The wall:** ten shelves, in order, with arrows to move a pair. Pairs can wait off the wall. The Dunk is the intro's pair (the loader's film is made around it), so it stays up.
+- **See it on the wall** opens the real site with the draft (`?draft`, this browser only, with a "not published yet" badge).
+- **Publish** is one commit to this repository through the GitHub API (`src/admin/github.js`): `docs/catalog.json`, `src/catalog.json` and the new pictures in `docs/assets/` and `assets/`. Pages deploys it in about a minute; the admin says when it's live. The page reads `catalog.json` fresh on every visit (the copy built into `index.html` is only a fallback), so nothing needs rebuilding. If someone else published in between, it stops and says so instead of overwriting.
+
+Without signing in it's a demo: everything works and previews, but stays in that browser. To publish, sign in once with a fine-grained GitHub token for this repository with **Contents: Read and write** (the admin walks through it); the key stays in that browser. No server, no database, nothing to pay for.
+
+## Change a pair by hand
+
+Edit `src/catalog.json`: `price`, `sizes`, `soldOut`, `desc`, `photos` (the admin writes the same file). Then rebuild:
 
 ```
 npm install

@@ -11,11 +11,12 @@
     "reel": "node tools/reel_video.js http://127.0.0.1:8765/ qa/reel desk 30 && python3 tools/flash_check.py qa/reel"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
     "@fontsource-variable/inter-tight": "^5.3.0",
     "@fontsource-variable/noto-sans-georgian": "^5.3.0",
     "@fontsource-variable/rubik": "^5.3.0",
     "@sparticuz/chromium": "^153.0.0",
+    "esbuild": "^0.28.2",
+    "onnxruntime-web": "1.20.1",
     "puppeteer-core": "^25.16.0"
   }
 }

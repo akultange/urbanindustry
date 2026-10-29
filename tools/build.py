@@ -91,29 +91,55 @@ def main():
     css = open(os.path.join(SRC, 'style.css')).read().replace('%FONTS%', font_css)
     css = subprocess.run([os.path.join(NM, '.bin', 'esbuild'), '--loader=css', '--minify'], input=css, capture_output=True, text=True, check=True).stdout
     cat = json.load(open(os.path.join(SRC, 'catalog.json')))
+    cat.setdefault('archive', [])
     # a content hash per pair, so a re-cut picture never comes out of an old cache
-    import hashlib
-    for p in cat['pairs']:
+    for p in cat['pairs'] + cat['archive']:
         h = hashlib.sha1()
         for size in (512, 1024):
-            with open(os.path.join(ROOT, 'assets', 'shoes', f'{p["id"]}-{size}.webp'), 'rb') as f: h.update(f.read())
+            f = os.path.join(ROOT, 'assets', 'shoes', f'{p["id"]}-{size}.{p.get("ext", "webp")}')
+            if os.path.exists(f): h.update(open(f, 'rb').read())
         p['v'] = h.hexdigest()[:8]
+    # the live catalog: the page fetches it fresh, and admin/ publishes it (with the pairs off the wall)
+    open(os.path.join(DIST, 'catalog.json'), 'w').write(json.dumps(cat, ensure_ascii=False, separators=(',', ':')))
     html = open(os.path.join(SRC, 'index.html')).read()
     # everything here is read with fetch() + createImageBitmap, so preload as fetch (not image)
     pre = lambda href, hi=False: f'<link rel="preload" href="{href}" as="fetch" crossorigin{" fetchpriority=" + chr(34) + "high" + chr(34) if hi else ""}>'
-    anchor = next(p for p in cat['pairs'] if p['id'] == 'dunk')
-    shoes = [pre(f'assets/shoes/{anchor["id"]}-1024.webp?v={anchor["v"]}', True)]
-    shoes += [pre(f'assets/shoes/{p["id"]}-512.webp?v={p["v"]}') for p in cat['pairs']]
-    shoes += [pre(f'assets/reel/{n}.webp') for n in ('dunk-lines', 'held', 'box')]
+    anchor = next((p for p in cat['pairs'] if p['id'] == 'dunk'), cat['pairs'][0])
+    shoe = lambda p, size: f'assets/shoes/{p["id"]}-{size}.{p.get("ext", "webp")}?v={p["v"]}'
+    shoes = [pre(shoe(anchor, 1024), True)] + [pre(shoe(p, 512)) for p in cat['pairs']]
+    if anchor['id'] == 'dunk': shoes += [pre(f'assets/reel/{n}.webp') for n in ('dunk-lines', 'held', 'box')]
     logo_svg, fav = logo()
     og = (PUBLIC.rstrip('/') + '/' if PUBLIC else '') + 'assets/img/og.jpg'
     html = (html.replace('%CSS%', css).replace('%JS%', js.replace('</script', '<\\/script'))
-            .replace('%CATALOG%', json.dumps(cat, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'))
+            .replace('%CATALOG%', json.dumps({'pairs': cat['pairs']}, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'))
             .replace('%PRELOAD%', '\n'.join(preload + shoes)).replace('%FAVICON%', fav).replace('%OG_IMAGE%', og).replace('%LOGO%', logo_svg))
     open(os.path.join(DIST, 'index.html'), 'w').write(html)
     open(os.path.join(DIST, '.nojekyll'), 'w').write('')
+    admin(font_css, logo_svg, fav)
     sz = lambda p: os.path.getsize(p)
     print(f'index.html {sz(os.path.join(DIST, "index.html")) / 1024:.1f} KB (js {len(js) / 1024:.1f} KB, css {len(css) / 1024:.1f} KB)')
+
+
+def admin(font_css, logo_svg, fav):
+    """admin/: the shop's manager for the wall (src/admin), with the cut-out model and its runtime in admin/vendor."""
+    out = os.path.join(DIST, 'admin')
+    os.makedirs(os.path.join(out, 'vendor'), exist_ok=True)
+    js = subprocess.run([os.path.join(NM, '.bin', 'esbuild'), os.path.join(SRC, 'admin', 'admin.js'), '--bundle', '--minify', '--format=iife', '--target=es2020', '--legal-comments=none'],
+                        capture_output=True, text=True, check=True).stdout
+    css = open(os.path.join(SRC, 'admin', 'admin.css')).read().replace('%FONTS%', font_css.replace('url(assets/', 'url(../assets/'))
+    css = subprocess.run([os.path.join(NM, '.bin', 'esbuild'), '--loader=css', '--minify'], input=css, capture_output=True, text=True, check=True).stdout
+    page = open(os.path.join(SRC, 'admin', 'index.html')).read()
+    page = page.replace('%CSS%', css).replace('%JS%', js.replace('</script', '<\\/script')).replace('%LOGO%', logo_svg).replace('%FAVICON%', fav)
+    open(os.path.join(out, 'index.html'), 'w').write(page)
+    # onnxruntime-web (WASM only) under names GitHub Pages serves as JavaScript, and the U2-Net model
+    ort = os.path.join(NM, 'onnxruntime-web', 'dist')
+    for src, dst in (('ort.wasm.min.mjs', 'ort.wasm.min.js'), ('ort-wasm-simd-threaded.mjs', 'ort-wasm.js'), ('ort-wasm-simd-threaded.wasm', 'ort-wasm.wasm')):
+        shutil.copyfile(os.path.join(ort, src), os.path.join(out, 'vendor', dst))
+    shutil.copyfile(os.path.join(ROOT, 'vendor', 'u2netp.onnx'), os.path.join(out, 'vendor', 'u2netp.onnx'))
+    shutil.copyfile(os.path.join(ROOT, 'vendor', 'LICENSE-u2netp.txt'), os.path.join(out, 'vendor', 'LICENSE-u2netp.txt'))
+    if os.path.exists(os.path.join(NM, 'onnxruntime-web', 'LICENSE')):
+        shutil.copyfile(os.path.join(NM, 'onnxruntime-web', 'LICENSE'), os.path.join(out, 'vendor', 'LICENSE-onnxruntime-web.txt'))
+    print(f'admin/index.html {os.path.getsize(os.path.join(out, "index.html")) / 1024:.1f} KB (js {len(js) / 1024:.1f} KB)')
 
 
 if __name__ == '__main__':

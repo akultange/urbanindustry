@@ -208,8 +208,9 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       const cols = portrait ? 2 : 5, rows = Math.ceil(count / cols);
       const pitchX = portrait ? 0.52 : 0.58, pitchY = portrait ? 0.41 : 0.64, y0 = 1.02;
       for (let i = 0; i < count; i++) {
-        const c = i % cols, r = Math.floor(i / cols);
-        sh.push({ x: (c - (cols - 1) / 2) * pitchX, y: y0 + (rows - 1 - r) * pitchY });
+        // a short last row (fewer than ten pairs up) sits centred under the others
+        const c = i % cols, r = Math.floor(i / cols), inRow = Math.min(cols, count - r * cols);
+        sh.push({ x: (c - (inRow - 1) / 2) * pitchX, y: y0 + (rows - 1 - r) * pitchY });
       }
     } else {
       for (let i = 0; i < count; i++) sh.push({ x: i * WALK_PITCH, y: 1.24 });

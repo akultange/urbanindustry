@@ -440,3 +440,11 @@ html.ready .tint-bottom { background-color: #101214; }
 html.no-gl .tint { background-color: var(--bg); }
 /* an open panel colours the bars itself, and so does the phone's product sheet at the bottom */
 html.layer .tint, body.focused .tint-bottom { display: none; }
+
+/* ?draft: the admin's preview of edits that aren't published yet */
+html.draft body::before {
+  content: 'Preview · not published yet'; position: fixed; z-index: 90; top: calc(var(--top) + 8px); left: 50%; transform: translateX(-50%);
+  padding: 7px 14px; border-radius: 99px; background: rgba(162, 193, 240, .16); border: 1px solid rgba(162, 193, 240, .4);
+  color: var(--accent-2); font: 500 12px/1 var(--sans); letter-spacing: .02em; white-space: nowrap; pointer-events: none;
+}
+html.draft[lang='ka'] body::before { content: 'გადახედვა · ჯერ არ გამოქვეყნებულა'; font-family: var(--ka); }

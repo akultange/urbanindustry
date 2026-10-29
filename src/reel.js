@@ -57,7 +57,7 @@ const SWATCHES = [
   ['Birch', 'Mexico 66', '#d9d1be'], ['Cognac', '530 SL', '#a0714f'],
 ];
 
-export function createReel({ root, lang = 'ka', phone = false, isPhone = null, reduced = false, short = false, film = false, anchorIndex, pairs }) {
+export function createReel({ root, lang = 'ka', phone = false, isPhone = null, reduced = false, short = false, film = false, anchorIndex, pairs, name = '' }) {
   const canvas = root.querySelector('canvas');
   let g = canvas.getContext('2d', { alpha: false });
   const hud = Object.fromEntries([...root.querySelectorAll('[data-hud]')].map(el => [el.dataset.hud, el]));
@@ -642,7 +642,7 @@ export function createReel({ root, lang = 'ka', phone = false, isPhone = null, r
     const raw = SHOTS[shot](neg, arg);
     if (neg && raw !== true) invert();
     root.dataset.tone = tone;
-    const cap = C()[shot];
+    const cap = shot === 'field' && name ? name : C()[shot];   // the pair's own name, from the catalog
     if (hud.cap && hud.cap.textContent !== cap) hud.cap.textContent = cap;
   }
   function setPct(p) {

@@ -5,8 +5,10 @@ import { createSound } from './sound.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const html = document.documentElement;
-const catalog = JSON.parse($('#catalog').textContent);
-const pairs = catalog.pairs;
+// The pairs on the wall. The shop edits them in admin/, which publishes catalog.json; the copy built into the
+// page is the fallback. They're swapped in, in place, before anything is drawn (loadCatalog).
+const pairs = JSON.parse($('#catalog').textContent).pairs.map(normalize);
+const catalog = { pairs };
 const ASSET = window.__ASSET_BASE || 'assets/';
 const IG = 'https://ig.me/m/urbanindustry_';
 // the loader plays for everyone; reduced motion only swaps the camera moves for fades.
@@ -21,7 +23,7 @@ const T = {
   ka: {
     skip: 'წყვილების სიაზე გადასვლა', navWall: 'კედელი', navAbout: 'ჩვენ შესახებ', bag: 'კალათა',
     h1: 'Urban Industry — სნიკერები თბილისიდან',
-    status: 'კედელი 01 / 10 წყვილი', hint: 'გადაატარე კურსორი — აინთება. დააჭირე — ჩამოიღე თაროდან.', hintTouch: 'შეეხე წყვილს — ჩამოიღე თაროდან.',
+    status: n => `კედელი 01 / ${n} წყვილი`, hint: 'გადაატარე კურსორი — აინთება. დააჭირე — ჩამოიღე თაროდან.', hintTouch: 'შეეხე წყვილს — ჩამოიღე თაროდან.',
     pNote: 'კედელი 01 / ფეხსაცმელი', chooseSize: 'აირჩიე ზომა', orderDirect: 'შეკვეთა Direct-ში', pickSize: 'ჯერ ზომა აირჩიე',
     sizeReady: s => `ზომა ${s} · შეკვეთა დაკოპირდება`, addBag: 'კალათაში დამატება', fromFeed: 'ჩვენი გვერდიდან',
     details: 'ზომები და მიწოდება', detailsText: 'ზომები ევროპულია (EU). ზუსტად არ იცი შენი? მოგვწერე Direct-ში, რა ზომას ატარებ ჩვეულებრივ. ვაგზავნით მთელ მსოფლიოში.',
@@ -40,7 +42,7 @@ const T = {
   en: {
     skip: 'Skip to the pairs', navWall: 'Wall', navAbout: 'About', bag: 'Bag',
     h1: 'Urban Industry — sneakers from Tbilisi',
-    status: 'Wall 01 / 10 pairs', hint: 'Hover to light it. Click to take it off the shelf.', hintTouch: 'Tap a pair to take it off the shelf.',
+    status: n => `Wall 01 / ${n} ${n === 1 ? 'pair' : 'pairs'}`, hint: 'Hover to light it. Click to take it off the shelf.', hintTouch: 'Tap a pair to take it off the shelf.',
     pNote: 'Wall 01 / Footwear', chooseSize: 'Choose your size', orderDirect: 'Order in Direct', pickSize: 'Pick your size first',
     sizeReady: s => `EU ${s} · your order gets copied`, addBag: 'Add to bag', fromFeed: 'From our feed',
     details: 'Sizing & delivery', detailsText: 'EU sizing. Not sure about yours? Tell us the size you usually wear in Direct. We ship worldwide.',
@@ -68,7 +70,8 @@ const t = (k, ...a) => { const v = T[lang][k]; return typeof v === 'function' ? 
 function applyLang() {
   html.lang = lang;
   document.title = t('title');
-  $$('[data-i18n]').forEach(el => { const v = t(el.dataset.i18n); if (typeof v === 'string') el.textContent = v; });
+  $$('[data-i18n]').forEach(el => { const v = t(el.dataset.i18n, pairs.length); if (typeof v === 'string') el.textContent = v; });
+  $('#wall-count').textContent = pairs.length;
   $$('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   $('#sound-btn').setAttribute('aria-label', t('sound')); $('#sound-btn').title = t('sound');
   buildLabels(); buildList();
@@ -79,9 +82,68 @@ $$('.lang button').forEach(b => b.addEventListener('click', () => { lang = b.dat
 
 // ---------------------------------------------------------------- helpers
 const gel = n => `${n}<span class="gel"> ₾</span>`;
-const SHOE_V = Object.fromEntries(pairs.map(p => [p.id, p.v]));
-const img = (id, size) => `${ASSET}shoes/${id}-${size}.webp${SHOE_V[id] ? `?v=${SHOE_V[id]}` : ''}`;
-const photo = (n, thumb) => `${ASSET}photos/${n}${thumb ? '-t' : ''}.webp`;
+// pictures: shoes/<id>-<512|1024>.<ext>?v=<hash> and photos/<name>[-t].<ext>; a draft preview's unpublished
+// pictures come from this browser's storage instead (DRAFT_IMG, keyed by the same paths)
+const SHOE_V = {}, SHOE_EXT = {}, DRAFT_IMG = {};
+const img = (id, size) => DRAFT_IMG[`shoes/${id}-${size}`] || `${ASSET}shoes/${id}-${size}.${SHOE_EXT[id] || 'webp'}${SHOE_V[id] ? `?v=${SHOE_V[id]}` : ''}`;
+const photo = (ph, thumb) => DRAFT_IMG[`photos/${ph.src}${thumb ? '-t' : ''}`] || `${ASSET}photos/${ph.src}${thumb ? '-t' : ''}.${ph.ext || 'webp'}`;
+// a pair as the page expects it, whatever the admin (or an older catalog) left out
+function normalize(p) {
+  const two = v => (v && typeof v === 'object' ? { ka: v.ka || v.en || '', en: v.en || v.ka || '' } : { ka: v || '', en: v || '' });
+  const sizes = (Array.isArray(p.sizes) ? p.sizes : []).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  return {
+    ...p, brand: p.brand || '', model: p.model || '', color: two(p.color), desc: two(p.desc), price: Number(p.price) || 0,
+    sizes, soldOut: (Array.isArray(p.soldOut) ? p.soldOut : []).map(Number).filter(n => sizes.includes(n)),
+    photos: Array.isArray(p.photos) ? p.photos.filter(ph => ph && ph.src) : [],
+    rect: Array.isArray(p.rect) && p.rect.length === 4 ? p.rect : [0.04, 0.06, 0.96, 0.99], base: p.base ?? 0.012,
+  };
+}
+function indexPictures() { for (const p of pairs) { SHOE_V[p.id] = p.v; SHOE_EXT[p.id] = p.ext; } }
+indexPictures();
+// the live catalog (fresh past the CDN's cache, so a publish shows up as soon as it's deployed); ?draft shows
+// the admin's unpublished edits, in this browser only
+async function loadCatalog(draft) {
+  let next = null;
+  if (draft) {
+    try {
+      const d = JSON.parse(localStorage.getItem('ui.admin.draft') || 'null');
+      if (d && d.catalog) {
+        next = d.catalog;
+        const files = await draftFiles();
+        for (const [k, blob] of Object.entries(files)) DRAFT_IMG[k] = URL.createObjectURL(blob);
+        html.classList.add('draft');
+      }
+    } catch (e) {}
+  }
+  if (!next) {
+    try {
+      const ctl = new AbortController(), k = setTimeout(() => ctl.abort(), 2500);
+      const r = await fetch(`catalog.json?t=${Date.now()}`, { cache: 'no-store', signal: ctl.signal });
+      clearTimeout(k);
+      if (r.ok) next = await r.json();
+    } catch (e) {}
+  }
+  const wall = next && Array.isArray(next.pairs) ? next.pairs.filter(p => p && p.id).slice(0, 10).map(normalize) : [];
+  if (wall.length) pairs.splice(0, pairs.length, ...wall);
+  indexPictures();
+}
+// the admin keeps pictures it hasn't published yet in IndexedDB (admin.js, same origin)
+function draftFiles() {
+  return new Promise(res => {
+    try {
+      const rq = indexedDB.open('ui-admin', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('files');
+      rq.onerror = () => res({});
+      rq.onsuccess = () => {
+        const out = {}, tx = rq.result.transaction('files', 'readonly'), st = tx.objectStore('files');
+        const cur = st.openCursor();
+        cur.onsuccess = () => { const c = cur.result; if (c) { out[c.key] = c.value; c.continue(); } else res(out); };
+        cur.onerror = () => res(out);
+      };
+    } catch (e) { res({}); }
+  });
+}
+const catalogP = loadCatalog(new URLSearchParams(location.search).has('draft'));
 function loadImage(src) {
   return new Promise((res, rej) => { const i = new Image(); i.decoding = 'async'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 }
@@ -181,10 +243,11 @@ function fillProduct(i) {
   order.setAttribute('aria-disabled', String(!ready));
   $('#order-hint').textContent = ready ? t('sizeReady', picked) : t('pickSize');
   const th = $('#thumbs'); th.innerHTML = '';
+  th.closest('.p-feed').hidden = !p.photos.length;
   p.photos.forEach((ph, k) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb';
     b.setAttribute('aria-label', `${p.model} — photo ${k + 1}`);
-    b.innerHTML = `<img src="${photo(ph.src, true)}" alt="" loading="lazy" decoding="async">`;
+    b.innerHTML = `<img src="${photo(ph, true)}" alt="" loading="lazy" decoding="async">`;
     b.addEventListener('click', () => openLightbox(p, k));
     th.append(b);
   });
@@ -323,7 +386,7 @@ let lb = null;
 function openLightbox(p, k) { lb = { p, k }; showLb(); openLayer('lightbox'); }
 function showLb() {
   const { p, k } = lb; const ph = p.photos[k];
-  const im = $('#lb-img'); im.src = photo(ph.src); im.alt = `${p.brand} ${p.model}`;
+  const im = $('#lb-img'); im.src = photo(ph); im.alt = `${p.brand} ${p.model}`;
   $('#lb-count').textContent = `${pad2(k + 1)} / ${pad2(p.photos.length)}`;
   $('#lb-prev').hidden = $('#lb-next').hidden = p.photos.length < 2;
 }
@@ -437,7 +500,8 @@ function noGL() {
   scene = null; html.classList.add('no-gl'); html.classList.remove('loading', 'intro'); buildList(); route(false); syncBars();
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const ANCHOR = Math.max(0, pairs.findIndex(p => p.id === 'dunk'));
+// the pair the loader is built around (its film, its photos); found once the live catalog is in
+let ANCHOR = 0;
 
 // sound: the header toggle, remembered; browsers only start audio from a click or a key
 const soundBtn = $('#sound-btn');
@@ -449,6 +513,8 @@ function soundOff() { sound.disable(); liveReel?.unclock(); setSoundUI(false); s
 soundBtn.addEventListener('click', () => (sound.on ? soundOff() : soundOn().then(ok => ok && sound.ui('hover'))));
 
 async function boot() {
+  await catalogP;
+  ANCHOR = Math.max(0, pairs.findIndex(p => p.id === 'dunk'));
   applyLang();
   const params = new URLSearchParams(location.search);
   const capture = params.has('capture');
@@ -457,7 +523,9 @@ async function boot() {
   let reel = null;
   if (!(window.AudioContext || window.webkitAudioContext)) soundBtn.hidden = true;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, isPhone: () => phoneQ.matches, reduced: false, short: params.has('short'), film: capture, anchorIndex: ANCHOR, pairs });
+    // the full film is made around the Dunk (its photos, its drawing): without it on the wall, the short cut
+    const dunk = pairs[ANCHOR].id === 'dunk';
+    reel = createReel({ root: reelEl, lang, phone, isPhone: () => phoneQ.matches, reduced: false, short: params.has('short') || !dunk, film: capture, anchorIndex: ANCHOR, pairs, name: `${pairs[ANCHOR].brand} ${pairs[ANCHOR].model}` });
     reelCopy = reel.copy; liveReel = reel;
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());
@@ -480,11 +548,11 @@ async function boot() {
     });
   } else reelEl?.remove();
   // what the reel needs first: the pair it is built around
-  let loaded = 0; const total = pairs.length + 4;
+  let loaded = 0; const total = pairs.length + 1 + (pairs[ANCHOR].id === 'dunk' ? 3 : 0);
   const tickLoad = () => reel && reel.progress(++loaded / total * 100);
   const anchorP = loadBitmap(img(pairs[ANCHOR].id, 1024)).then(b => { reel?.set('anchor', b); tickLoad(); return b; }).catch(() => null);
   if (reel) {
-    for (const [k, src] of [['lines', `${ASSET}reel/dunk-lines.webp`], ['held', `${ASSET}reel/held.webp`], ['box', `${ASSET}reel/box.webp`]]) {
+    for (const [k, src] of pairs[ANCHOR].id === 'dunk' ? [['lines', `${ASSET}reel/dunk-lines.webp`], ['held', `${ASSET}reel/held.webp`], ['box', `${ASSET}reel/box.webp`]] : []) {
       loadBitmap(src, false).then(b => { reel.set(k, b); tickLoad(); }).catch(tickLoad);
     }
   }

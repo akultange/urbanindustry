@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b0c0e">
+<title>Urban Industry — მართვა</title>
+<link rel="icon" href="%FAVICON%">
+<style>%CSS%</style>
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="../" title="Urban Industry">%LOGO%<span class="tag" data-t="admin">მართვა</span></a>
+  <div class="bar-r">
+    <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ka">KA</button><button type="button" data-lang="en">EN</button></div>
+    <a class="ghost" href="../" target="_blank" rel="noopener" data-t="openSite">საიტი ↗</a>
+  </div>
+</header>
+
+<main>
+  <section class="account" id="account"></section>
+
+  <section class="block">
+    <div class="block-h">
+      <div><h1 data-t="onWall">კედელზე</h1><p class="sub" id="wall-sub"></p></div>
+      <button type="button" class="btn primary" id="add" data-t="add">+ ახალი წყვილი</button>
+    </div>
+    <ol class="grid" id="wall" aria-live="polite"></ol>
+  </section>
+
+  <section class="block">
+    <div class="block-h">
+      <div><h2 data-t="offWall">კედლის გარეთ</h2><p class="sub" data-t="offWallSub">აქ ელოდებიან, საიტზე არ ჩანან.</p></div>
+    </div>
+    <ol class="grid" id="archive"></ol>
+    <p class="empty" id="archive-empty" data-t="archiveEmpty">ცარიელია.</p>
+  </section>
+</main>
+
+<footer class="dock" id="dock">
+  <p class="dock-note" id="dock-note"></p>
+  <div class="dock-act">
+    <button type="button" class="btn" id="preview" data-t="preview">ნახე კედელზე</button>
+    <button type="button" class="btn primary" id="publish" data-t="publish">გამოქვეყნება</button>
+  </div>
+</footer>
+
+<!-- the editor: one pair -->
+<div class="sheet" id="editor" role="dialog" aria-modal="true" aria-labelledby="ed-title" hidden>
+  <div class="sheet-in">
+    <div class="sheet-h">
+      <h2 id="ed-title"></h2>
+      <button type="button" class="x" data-close aria-label="Close">×</button>
+    </div>
+    <div class="ed">
+      <div class="ed-pic">
+        <div class="stage" id="stage">
+          <div class="slats"></div>
+          <img id="stage-img" alt="">
+          <div class="shelf"></div>
+          <div class="stage-empty" id="stage-empty"><b data-t="photoTitle">ფოტო</b><span data-t="photoHint">ერთი ფეხსაცმელი გვერდიდან, მშვიდ ფონზე — ფონი თავისით მოშორდება.</span></div>
+          <div class="stage-busy" id="stage-busy" hidden><i></i><span id="busy-text"></span></div>
+        </div>
+        <div class="pic-act">
+          <label class="btn" for="photo"><span data-t="choose">ფოტოს არჩევა</span></label>
+          <input type="file" id="photo" accept="image/*" hidden>
+          <button type="button" class="btn ghost" id="flip" data-t="flip">სარკე</button>
+        </div>
+        <div class="pic-tune" id="pic-tune" hidden>
+          <label><span data-t="straighten">გასწორება</span><input type="range" id="rotate" min="-10" max="10" step="0.5" value="0"></label>
+          <label><span data-t="edge">კიდე</span><input type="range" id="tol" min="0.6" max="1.6" step="0.05" value="1"></label>
+          <label class="check"><input type="checkbox" id="keep-bg"><span data-t="keepBg">ფონი არ მოშორდეს (უკვე ამოჭრილია)</span></label>
+          <p class="note" id="pic-note"></p>
+        </div>
+      </div>
+
+      <div class="ed-form">
+        <div class="row2">
+          <label><span data-t="brand">ბრენდი</span><input id="f-brand" autocomplete="off" placeholder="Nike"></label>
+          <label><span data-t="model">მოდელი</span><input id="f-model" autocomplete="off" placeholder="Dunk Low"></label>
+        </div>
+        <div class="row2">
+          <label><span data-t="colorKa">ფერი (ქართ.)</span><input id="f-color-ka" autocomplete="off" placeholder="წითელი / თეთრი"></label>
+          <label><span data-t="colorEn">ფერი (ინგლ.)</span><input id="f-color-en" autocomplete="off" placeholder="Red / White"></label>
+        </div>
+        <label class="price"><span data-t="price">ფასი</span><span class="price-in"><input id="f-price" inputmode="numeric" autocomplete="off" placeholder="249"><i>₾</i></span></label>
+
+        <div class="sizes-h"><span data-t="sizes">ზომები (EU)</span><span class="legend"><i class="on"></i><span data-t="inStock">მარაგშია</span><i class="out"></i><span data-t="soldOut">ამოიწურა</span></span></div>
+        <div class="sizes" id="f-sizes"></div>
+        <p class="note" data-t="sizesHint">შეეხე ზომას: არ გვაქვს → მარაგშია → ამოიწურა.</p>
+
+        <details class="more">
+          <summary data-t="more">აღწერა და ფოტოები</summary>
+          <label><span data-t="descKa">აღწერა (ქართ.)</span><textarea id="f-desc-ka" rows="2"></textarea></label>
+          <label><span data-t="descEn">აღწერა (ინგლ.)</span><textarea id="f-desc-en" rows="2"></textarea></label>
+          <div class="feed-h"><span data-t="feed">ჩვენი გვერდიდან</span></div>
+          <div class="feed" id="f-feed"></div>
+          <input type="file" id="feed-photo" accept="image/*" hidden>
+        </details>
+
+        <p class="err" id="ed-err" role="alert"></p>
+        <div class="ed-act">
+          <button type="button" class="btn danger" id="ed-delete" data-t="delete">წაშლა</button>
+          <button type="button" class="btn" id="ed-move"></button>
+          <span class="sp"></span>
+          <button type="button" class="btn primary" id="ed-done" data-t="done">შენახვა</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- sign in: a GitHub key for the site's repository -->
+<div class="sheet" id="signin" role="dialog" aria-modal="true" aria-labelledby="si-title" hidden>
+  <div class="sheet-in narrow">
+    <div class="sheet-h"><h2 id="si-title" data-t="signIn">შესვლა</h2><button type="button" class="x" data-close aria-label="Close">×</button></div>
+    <p class="lead" data-t="signInLead">გამოქვეყნება ხდება GitHub-ზე, სადაც საიტი ცხოვრობს. საჭიროა გასაღები (token), ერთხელ.</p>
+    <ol class="steps" id="si-steps"></ol>
+    <label><span data-t="key">გასაღები</span><input id="si-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <details class="more"><summary data-t="repoAdv">საცავი</summary>
+      <label><span>owner / repo</span><input id="si-repo" autocomplete="off" spellcheck="false"></label>
+    </details>
+    <p class="err" id="si-err" role="alert"></p>
+    <div class="ed-act"><span class="sp"></span><button type="button" class="btn primary" id="si-go" data-t="signInGo">შესვლა</button></div>
+  </div>
+</div>
+
+<!-- publish -->
+<div class="sheet" id="pub" role="dialog" aria-modal="true" aria-labelledby="pub-title" hidden>
+  <div class="sheet-in narrow">
+    <div class="sheet-h"><h2 id="pub-title" data-t="publish">გამოქვეყნება</h2><button type="button" class="x" data-close aria-label="Close">×</button></div>
+    <ul class="changes" id="pub-list"></ul>
+    <div class="progress" id="pub-progress" hidden><i></i></div>
+    <p class="note" id="pub-note"></p>
+    <p class="err" id="pub-err" role="alert"></p>
+    <div class="ed-act"><button type="button" class="btn ghost" id="pub-discard" data-t="discard">ცვლილებების გაუქმება</button><span class="sp"></span><button type="button" class="btn primary" id="pub-go" data-t="publishGo">გამოქვეყნება</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>%JS%</script>
+</body>
+</html>
