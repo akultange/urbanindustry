@@ -11,6 +11,7 @@ import LOGO from './logo.json';
 
 const BLUE = '#a2c1f0', PAPER = '#ecebe7', INK = '#0e0f12';
 const CUT = 400 / 3;      // 133 ms: four frames at 30 fps
+const DISSOLVE_MS = 420;  // the loader dissolving into the real wall (style.css .reel.fade)
 const PAIR_M = 0.43 * 0.92; // a pair's width on the real wall, in metres (scene.js SHOE_W x content)
 
 const COPY = {
@@ -774,11 +775,15 @@ export function createReel({ root, lang = 'ka', phone = false, isPhone = null, r
       skipped = true; finish();
     },
     // the match cut: the reel goes, the real wall is already drawn underneath
-    land({ fade = false } = {}) {
+    land({ fade = false, keep = false } = {}) {
       cancelAnimationFrame(raf); raf = 0;
-      if (fade) { root.classList.add('fade'); setTimeout(() => root.remove(), 450); }
+      if (keep) return;
+      if (fade) { root.classList.add('fade'); setTimeout(() => root.remove(), DISSOLVE_MS + 60); }
       else root.remove();
     },
+    // capture mode: the dissolve, by hand (k: 0 = loader, 1 = wall)
+    dissolve(k) { root.style.opacity = String(1 - k); if (k >= 1) root.remove(); },
+    dissolveMs: DISSOLVE_MS,
     resize() { if (!root.isConnected) return; measure(); if (root.classList.contains('gate')) { drawBox(0, gateNudge); if (api._gatePlace) api._gatePlace(); } else if (current) draw(current); },
     get skipped() { return skipped; },
     copy: k => C()[k],

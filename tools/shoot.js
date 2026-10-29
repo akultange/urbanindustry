@@ -52,17 +52,18 @@ fs.mkdirSync(out, { recursive: true });
   });
   if (all.includes('phone')) await run('phone', phone, async p => {
     await p.screenshot({ path: `${out}/phone.png` });
-    // swipe left
-    await p.touchscreen.touchStart(300, 420);
-    for (let i = 1; i <= 8; i++) { await p.touchscreen.touchMove(300 - i * 25, 420); await sleep(16); }
-    await p.touchscreen.touchEnd();
-    await sleep(3000);
-    await p.screenshot({ path: `${out}/phone-swiped.png` });
   });
+  // phone: tap a pair on the wall (it lights, then comes off the shelf into the sheet); tap the wall to close
   if (all.includes('sheet')) await run('sheet', phone, async p => {
-    await p.tap('#wb-open');
-    await sleep(2600);
+    const r = await p.evaluate(() => window.__ui.scene.shoeScreenRect(2));
+    await p.touchscreen.tap((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2);
+    await sleep(3000);
     await p.screenshot({ path: `${out}/phone-sheet.png` });
+    logs.push('[sheet] ' + JSON.stringify(await p.evaluate(() => ({ hash: location.hash, open: document.querySelector('#product').classList.contains('open') }))));
+    await p.touchscreen.tap(24, 300);
+    await sleep(2500);
+    await p.screenshot({ path: `${out}/phone-closed.png` });
+    logs.push('[sheet closed] ' + JSON.stringify(await p.evaluate(() => ({ hash: location.hash, open: document.querySelector('#product').classList.contains('open') }))));
   });
   console.log(logs.join('\n') || 'no console errors');
   await b.close();

@@ -14,8 +14,9 @@ const FOV_WALL = 26 * Math.PI / 180, FOV_WALK = 34 * Math.PI / 180;
 // sign texture: letters fill 80% of the width, the rest is room for the halo
 const SIGN_TW = 2048, SIGN_TH = 1024, SIGN_FILL = 0.72;
 const LED_IDLE = 0.05;
+export const SIGN_ON = 2.35;  // seconds into the pull-back when the sign starts to flicker on
 
-export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMotion = false, manual = false } = {}) {
+export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMotion = false, manual = false, film = false } = {}) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false, premultipliedAlpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false });
   if (!gl) return null;
   const hasFloat = !!gl.getExtension('EXT_color_buffer_float');
@@ -23,11 +24,12 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
   const HDR = hasFloat ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT } : { internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE };
   const maxSamples = gl.getParameter(gl.MAX_SAMPLES) || 0;
 
-  // no GPU (SwiftShader, llvmpipe…): render a lighter scene so the page stays responsive
+  // no GPU (SwiftShader, llvmpipe…): render a lighter scene so the page stays responsive.
+  // Filming (tools/reel_video.js steps frames by hand) keeps full quality: time per frame doesn't matter there.
   const dbg = gl.getExtension('WEBGL_debug_renderer_info');
   const renderer = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : String(gl.getParameter(gl.RENDERER));
   const software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
-  if (software) tier = 'low';
+  if (software && !film) tier = 'low';
 
   // ---------------------------------------------------------------- programs (compiled off the main thread where possible)
   const par = gl.getExtension('KHR_parallel_shader_compile');
@@ -188,11 +190,15 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
   };
 
   // ---------------------------------------------------------------- layout
+  // a phone held upright gets the same wall, in two columns
+  const isPortrait = () => { const r = canvas.getBoundingClientRect(); return r.width > 0 && r.width / Math.max(1, r.height) < 0.8; };
   function layout(mode) {
     state.mode = mode;
     const sh = [];
+    const portrait = state.portrait = mode === 'wall' && isPortrait();
     if (mode === 'wall') {
-      const cols = 5, rows = Math.ceil(count / cols), pitchX = 0.58, pitchY = 0.64, y0 = 1.02;
+      const cols = portrait ? 2 : 5, rows = Math.ceil(count / cols);
+      const pitchX = portrait ? 0.52 : 0.58, pitchY = portrait ? 0.41 : 0.64, y0 = 1.02;
       for (let i = 0; i < count; i++) {
         const c = i % cols, r = Math.floor(i / cols);
         sh.push({ x: (c - (cols - 1) / 2) * pitchX, y: y0 + (rows - 1 - r) * pitchY });
@@ -203,16 +209,19 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     state.shelves = sh;
     // the sign: centred over the middle of the wall (desktop) or over the first shelf you see (phone)
     const topY = Math.max(...sh.map(s => s.y));
-    const lw = mode === 'wall' ? 0.9 : 0.46;
+    const lw = mode === 'wall' ? (portrait ? 0.74 : 0.9) : 0.46;
     const lh = lw * LOGO.h / LOGO.w;
     const cx = mode === 'wall' ? 0 : sh[state.start].x;
-    const ly = topY + (mode === 'wall' ? 0.36 : 0.36);
+    const ly = topY + (portrait ? 0.34 : 0.36);
     const tw = lw / SIGN_FILL, th = tw * SIGN_TH / SIGN_TW;
     state.letters = [cx - lw / 2, ly, lw, lh];
     state.sign = [cx - tw / 2, ly + lh / 2 - th / 2, tw, th];
-    state.wash = mode === 'wall' ? [0, 1.75, 0.55, 2.35] : [cx, 3.2, 0.7, 2.1];
-    // the LED run after the loader goes left to right, top row a beat ahead
-    state.sweepOrder = sh.map((s, i) => [s.x + (s.y > Math.min(...sh.map(q => q.y)) + 0.01 ? 0 : 0.31), i]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+    state.wash = mode === 'wall' ? (portrait ? [0, 0.75, 0.55, 3.3] : [0, 1.75, 0.55, 2.35]) : [cx, 3.2, 0.7, 2.1];
+    // the LED run after the loader: left to right with the top row a beat ahead (wide), row by row down (upright)
+    const minY = Math.min(...sh.map(q => q.y));
+    state.sweepOrder = portrait
+      ? sh.map((s, i) => [-s.y * 10 + s.x, i]).sort((p, q) => p[0] - q[0]).map(p => p[1])
+      : sh.map((s, i) => [s.x + (s.y > minY + 0.01 ? 0 : 0.31), i]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
     buildBoxes();
     state.cam = state.cam || cameraFor('overview');
   }
@@ -282,6 +291,13 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       }
       const s = state.shelves[i];
       const fov = 24 * Math.PI / 180, t = Math.tan(fov / 2);
+      if (state.portrait) {
+        // a phone: the pair in the space between the header and the bottom sheet (focusBand, css px)
+        const H = state.h || 1, [b0, b1] = state.focusBand || [H * 0.08, H * 0.42];
+        const f = Math.max(0.12, (b1 - b0) / H), yc = 1 - 2 * ((b0 + b1) / 2) / H;
+        const d = Math.max(0.62 / (2 * t * a), 0.34 / (1.7 * f * t)), cy = s.y + 0.1;
+        return { pos: [s.x, cy, d], at: [s.x, cy, 0], fov, sx: 0, sy: -yc };
+      }
       // the pair fills ~46% of the width, a little left of centre so the panel sits over wall
       const wide = a > 1.15;
       const d = wide ? Math.min(1.6, Math.max(0.7, 0.80 / (2 * t * a))) : 0.95;
@@ -310,7 +326,7 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
   const EASE = {
     smoother: ease.smoother,
     // eases off the mark, then a long glide in: the pull-back after the loader
-    glide: bezier(0.4, 0, 0.16, 1),
+    glide: bezier(0.42, 0, 0.18, 1),
   };
   function flyTo(cam, dur = 1.0, curve = 'smoother', arc = 0.08) {
     state.camFrom = { ...state.cam, pos: [...state.cam.pos], at: [...state.cam.at] };
@@ -324,8 +340,11 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       const A = state.camFrom, B = state.camTo, L = (a, b) => a + (b - a) * k;
       // a slight pull-back mid-flight so the wall reads as a space
       const arc = Math.sin(Math.PI * k) * state.camArc * (Math.abs(B.pos[2] - A.pos[2]) * 0.5 + Math.hypot(B.pos[0] - A.pos[0], B.pos[1] - A.pos[1]));
+      // the pull-back from a close-up: distance changes geometrically, so the zoom runs at an even rate
+      // (linear distance zooms out in a burst at the start, then crawls)
+      const z = state.camEase === 'glide' && A.pos[2] > 0 && B.pos[2] > 0 ? A.pos[2] * Math.pow(B.pos[2] / A.pos[2], k) : L(A.pos[2], B.pos[2]);
       state.cam = {
-        pos: [L(A.pos[0], B.pos[0]), L(A.pos[1], B.pos[1]), L(A.pos[2], B.pos[2]) + arc],
+        pos: [L(A.pos[0], B.pos[0]), L(A.pos[1], B.pos[1]), z + arc],
         at: [L(A.at[0], B.at[0]), L(A.at[1], B.at[1]), L(A.at[2], B.at[2])],
         fov: L(A.fov, B.fov), sx: L(A.sx, B.sx), sy: L(A.sy, B.sy),
       };
@@ -376,6 +395,8 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     T.bloom = [];
     let bw = W >> 1, bh = H >> 1;
     for (let i = 0; i < levels; i++) { T.bloom.push(target(gl, Math.max(1, bw), Math.max(1, bh), HDR)); bw >>= 1; bh >>= 1; }
+    // depth of field for the hand-off: the scene at 1/2, 1/4, 1/8 (only drawn while it's in use)
+    T.soft = [2, 4, 8].map(k => target(gl, Math.max(1, Math.round(W / k)), Math.max(1, Math.round(H / k)), HDR));
   }
 
   function resize() {
@@ -387,6 +408,8 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     const W = Math.max(2, Math.round(r.width * dpr)), H = Math.max(2, Math.round(r.height * dpr));
     state.w = r.width; state.h = r.height; state.dpr = dpr; state.aspect = r.width / r.height;
     if (canvas.width !== W || canvas.height !== H || !T.ms) { canvas.width = W; canvas.height = H; makeTargets(); }
+    // turned between upright and wide: the wall re-arranges its columns
+    if (state.mode === 'wall' && state.shelves && isPortrait() !== !!state.portrait) layout('wall');
     if (state.held) return;
     if (state.focus >= 0) state.cam = cameraFor('focus', state.focus);
     else if (state.mode === 'walk') state.cam = cameraFor('walk', -1);
@@ -419,15 +442,32 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     if (!state.running && !state.held && !manual) { state.running = true; last = performance.now(); requestAnimationFrame(frame); }
   }
 
+  // The sign stays dark while the camera pulls back, then comes on like a tired neon tube: two short blinks,
+  // then on, with a small flutter while it settles. Five changes in half a second, so it stays under the
+  // flash limit (tools/flash_check.py). sound.js lands its clicks and buzz on the same times (SIGN_ON).
+  function signFlicker(it) {
+    const u = it - SIGN_ON;
+    if (u < 0) return 0;
+    if (u < 0.06) return 0.85;
+    if (u < 0.2) return 0;
+    if (u < 0.25) return 0.62;
+    if (u < 0.48) return 0;
+    const settle = 1 - sstep(0.48, 0.95, u);
+    return Math.min(1, 0.72 + 0.28 * sstep(0.48, 0.66, u)) * (1 - 0.06 * settle * Math.abs(Math.sin(u * 95)));
+  }
   const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
   const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   function update(dt) {
     // after the loader: the sign comes on, then the shelf LEDs run once along the wall
     if (state.introT >= 0 && state.introT < 10) state.introT += dt;
     const it = state.introT;
-    if (reducedMotion) { state.signK = it >= 0 ? 1 : 0; state.sweep.fill(0); }
+    if (reducedMotion) { state.signK = it >= 0 ? 1 : 0; state.sweep.fill(0); state.dof = 0; }
     else if (it >= 0) {
-      state.signK = ease.outQuart(sstep(0.3, 1.5, it)) * 0.97 + 0.03 * sstep(1.2, 1.9, it);
+      state.signK = signFlicker(it);
+      // after the loader the shop is dim; the lights come up with the sign (a smooth ramp after its last blink)
+      if (state.focusPair >= 0) state.room = 0.6 + 0.4 * sstep(SIGN_ON + 0.5, SIGN_ON + 1.2, it);
+      // the macro look racks out over the first second and a bit of the pull-back
+      if (state.dof > 0) state.dof = 1 - sstep(0.1, 1.35, it);
       state.sweepOrder.forEach((i, k) => {
         const u = it - (0.55 + k * 0.065);
         state.sweep[i] = u <= 0 ? 0 : u < 0.22 ? ease.outQuart(u / 0.22) * 0.55 : 0.55 * Math.max(0, 1 - (u - 0.22) / 0.7) ** 2;
@@ -467,7 +507,13 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       w.x = Math.max(-0.25, Math.min((count - 1) * WALK_PITCH + 0.25, w.x));
     }
     if (state.mode === 'walk' && state.camT >= 1) state.cam = cameraFor('walk', -1);
+    const z0 = state.cam ? state.cam.pos[2] : 0;
     camLerp(dt);
+    // how fast the pull-back zooms (log distance per second): the composite blurs along the zoom by it
+    if (state.focusPair >= 0 && state.introT >= 0 && state.introT < 3.4 && z0 > 0 && dt > 0) {
+      const v = Math.log(state.cam.pos[2] / z0) / dt;
+      state.zoomV = Number.isFinite(v) ? v : 0;
+    } else state.zoomV = 0;
   }
 
   // ---------------------------------------------------------------- render
@@ -479,8 +525,10 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     gl.uniform3fv(u.uLedColor, LED_COLOR);
     const wc = state.wash || [0, 1.75, 0.55, 2.35];
     const kx = state.mode === 'wall' ? -1.5 : state.shelves[state.start].x - 0.9;
-    gl.uniform4f(u.uKey, kx, 3.9, 2.5, 0.15);
-    gl.uniform4f(u.uFill, kx + 4.2, 1.2, 1.6, 0.025);
+    // the room light: dimmed while the loader hands over, up once the sign is on (state.room)
+    const room = state.room == null ? 1 : state.room;
+    gl.uniform4f(u.uKey, kx, 3.9, 2.5, 0.15 * room);
+    gl.uniform4f(u.uFill, kx + 4.2, 1.2, 1.6, 0.025 * room);
     gl.uniform4f(u.uWash, wc[0], wc[1], wc[2], wc[3]);
     gl.uniform4f(u.uCursor, state.cursor.x, state.cursor.y, 0.3, state.cursor.i * 0.34);
     gl.uniform4fv(u.uSign, state.sign);
@@ -601,14 +649,41 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     }
     gl.disable(gl.BLEND);
 
+    // depth of field (the hand-off only): blur the scene down the soft chain
+    const dof = state.dof || 0, S2 = T.soft;
+    if (dof > 0.001) {
+      gl.useProgram(P.down.p);
+      let src = T.scene;
+      for (const t of S2) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.viewport(0, 0, t.w, t.h);
+        gl.bindTexture(gl.TEXTURE_2D, src.tex);
+        gl.uniform1i(P.down.u.uTex, 0); gl.uniform2f(P.down.u.uTexel, 1 / src.w, 1 / src.h);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        src = t;
+      }
+    }
+
     // composite to screen
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.useProgram(P.comp.p);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.scene.tex);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, B[0].tex);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, S2[1].tex);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, S2[2].tex);
     const u = P.comp.u;
-    gl.uniform1i(u.uScene, 0); gl.uniform1i(u.uBloom, 1);
+    gl.uniform1i(u.uScene, 0); gl.uniform1i(u.uBloom, 1); gl.uniform1i(u.uSoft, 2); gl.uniform1i(u.uSoft2, 3);
+    gl.uniform1f(u.uDof, dof);
+    // motion blur along the zoom: a camera's shutter (~1/90 s) smears what rushes in, so the slats and
+    // pairs don't strobe past (tools/flash_check.py counts a moving stripe pattern as flicker)
+    const zb = reducedMotion ? 0 : Math.min(0.12, Math.abs(state.zoomV || 0) / 30);
+    let fr = null;
+    if ((dof > 0.001 || zb > 0.0005) && state.focusPair >= 0) fr = shoeScreenRect(state.focusPair);
+    if (fr) {
+      const fx = (fr.x0 + fr.x1) / 2 / state.w, fy = 1 - (fr.y0 + fr.y1) / 2 / state.h;
+      gl.uniform4f(u.uFocus, fx, fy, Math.max(1, (fr.x1 - fr.x0) / 2) / state.w, Math.max(1, (fr.y1 - fr.y0) / 2) / state.h);
+      gl.uniform3f(u.uZoom, fx, fy, zb);
+    } else gl.uniform3f(u.uZoom, 0.5, 0.5, 0);
     gl.uniform1f(u.uBloomK, 0.55); gl.uniform1f(u.uExposure, 1.35); gl.uniform1f(u.uTime, state.time);
     gl.uniform1f(u.uGrain, tier === 'low' ? 0.016 : 0.026); gl.uniform1f(u.uVig, 0.6); gl.uniform1f(u.uAspect, state.aspect);
     gl.uniform2f(u.uRes, W, H);
@@ -652,9 +727,12 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     layout(mode, opts = {}) { if (opts.start != null) state.start = opts.start; layout(mode); if (mode === 'walk') state.walk.x = state.shelves[state.start].x; resize(); },
     resize,
     setMargins(top, bottom) { state.marginTop = top; state.marginBottom = bottom; },
+    // phone: the strip of screen left for the pair above the product sheet
+    setFocusBand(top, bottom) { state.focusBand = [top, bottom]; },
     // the loader hands over here: hold a close-up of pair i on exactly the rect it drew
     introShot(i, rect) {
       state.held = true; state.introT = -1; state.signK = 0; state.par.x = state.par.y = state.par.tx = state.par.ty = 0;
+      state.focusPair = i; state.dof = reducedMotion ? 0 : 1; state.room = reducedMotion ? 1 : 0.6;
       state.cam = shotFor(i, rect); state.camT = 1;
       if (state.mode === 'walk') { state.walk.x = state.shelves[i].x; state.walk.v = 0; }
     },
@@ -666,7 +744,7 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       state.held = false;
       const to = state.focus >= 0 ? cameraFor('focus', state.focus) : state.mode === 'walk' ? cameraFor('walk', -1) : cameraFor('overview');
       if (instant || reducedMotion) { state.cam = to; state.camT = 1; state.introT = reducedMotion ? 10 : 0; }
-      else { state.introT = 0; flyTo(to, state.mode === 'walk' ? 1.9 : 2.6, 'glide', 0); }
+      else { state.introT = 0; flyTo(to, state.mode === 'walk' ? 2.2 : 3.0, 'glide', 0); }
       wake(3200);
     },
     hover(i) { if (state.hover !== i) { state.hover = i; wake(); } },

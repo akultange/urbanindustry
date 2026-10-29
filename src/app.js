@@ -21,7 +21,7 @@ const T = {
   ka: {
     skip: 'წყვილების სიაზე გადასვლა', navWall: 'კედელი', navAbout: 'ჩვენ შესახებ', bag: 'კალათა',
     h1: 'Urban Industry — სნიკერები თბილისიდან',
-    status: 'კედელი 01 / 10 წყვილი', hint: 'გადაატარე კურსორი — აინთება. დააჭირე — ჩამოიღე თაროდან.', hintTouch: 'გადაუყევი კედელს. შეეხე წყვილს.',
+    status: 'კედელი 01 / 10 წყვილი', hint: 'გადაატარე კურსორი — აინთება. დააჭირე — ჩამოიღე თაროდან.', hintTouch: 'შეეხე წყვილს — ჩამოიღე თაროდან.',
     pNote: 'კედელი 01 / ფეხსაცმელი', chooseSize: 'აირჩიე ზომა', orderDirect: 'შეკვეთა Direct-ში', pickSize: 'ჯერ ზომა აირჩიე',
     sizeReady: s => `ზომა ${s} · შეკვეთა დაკოპირდება`, addBag: 'კალათაში დამატება', fromFeed: 'ჩვენი გვერდიდან',
     details: 'ზომები და მიწოდება', detailsText: 'ზომები ევროპულია (EU). ზუსტად არ იცი შენი? მოგვწერე Direct-ში, რა ზომას ატარებ ჩვეულებრივ. ვაგზავნით მთელ მსოფლიოში.',
@@ -31,7 +31,7 @@ const T = {
     aboutTitle: 'სნიკერების კედელი, რომელსაც გაუყვები.', aboutLead: 'სნიკერების მაღაზია თბილისიდან — 144 ათასი ადამიანი Instagram-ზე. ვაგზავნით მთელ მსოფლიოში.',
     aboutText: 'აქ ყველა წყვილი ჩვენი გვერდიდანაა. აირჩიე წყვილი და ზომა, შეკვეთა კი Direct-ში დაასრულე — მარაგს, ფასს და მიწოდებას იქვე დაგიდასტურებთ.',
     step1: 'აირჩიე წყვილი და ზომა.', step2: 'დააჭირე „შეკვეთა Direct-ში“ — შეკვეთა დაკოპირდება.', step3: 'ჩასვი ჩატში. დაგიდასტურებთ და გამოგიგზავნით.',
-    bags: 'ჩანთები', concept: 'საიტის კონცეფცია: ლუკა სხილაძე. ფასები საორიენტაციოა.',
+    bags: 'ჩანთები', concept: 'საიტის კონცეფცია: LADZE studio. ფასები საორიენტაციოა.',
     copied: 'შეკვეთა დაკოპირდა — ჩასვი ჩატში', added: 'კალათაში დაემატა', pickFirst: 'ჯერ ზომა აირჩიე', soldOut: 'ამოიწურა', remove: 'წაშლა',
     msg: (lines, total) => `გამარჯობა! მინდა შევუკვეთო:\n${lines}${total ? `\nჯამი: ${total} ₾` : ''}\n(urbanindustry საიტიდან)`,
     line: (p, s) => `${p.brand} ${p.model} (${p.color.ka}), ზომა ${s} — ${p.price} ₾`,
@@ -40,7 +40,7 @@ const T = {
   en: {
     skip: 'Skip to the pairs', navWall: 'Wall', navAbout: 'About', bag: 'Bag',
     h1: 'Urban Industry — sneakers from Tbilisi',
-    status: 'Wall 01 / 10 pairs', hint: 'Hover to light it. Click to take it off the shelf.', hintTouch: 'Swipe along the wall. Tap a pair.',
+    status: 'Wall 01 / 10 pairs', hint: 'Hover to light it. Click to take it off the shelf.', hintTouch: 'Tap a pair to take it off the shelf.',
     pNote: 'Wall 01 / Footwear', chooseSize: 'Choose your size', orderDirect: 'Order in Direct', pickSize: 'Pick your size first',
     sizeReady: s => `EU ${s} · your order gets copied`, addBag: 'Add to bag', fromFeed: 'From our feed',
     details: 'Sizing & delivery', detailsText: 'EU sizing. Not sure about yours? Tell us the size you usually wear in Direct. We ship worldwide.',
@@ -50,7 +50,7 @@ const T = {
     aboutTitle: 'A sneaker wall you can walk along.', aboutLead: 'A sneaker store from Tbilisi with 144K people on Instagram. We ship worldwide.',
     aboutText: 'Every pair here comes straight from our feed. Pick one, choose your size and finish the order with us in Direct — we confirm stock, price and delivery right there.',
     step1: 'Pick a pair and your size.', step2: 'Tap “Order in Direct” — your order is copied.', step3: 'Paste it in the chat. We confirm and ship.',
-    bags: 'Bags', concept: 'Concept site by Luka Skhiladze. Prices are indicative.',
+    bags: 'Bags', concept: 'Concept site by LADZE studio. Prices are indicative.',
     copied: 'Order copied — paste it in the chat', added: 'Added to your bag', pickFirst: 'Pick your size first', soldOut: 'Sold out', remove: 'Remove',
     msg: (lines, total) => `Hi! I'd like to order:\n${lines}${total ? `\nTotal: ${total} ₾` : ''}\n(from the urbanindustry site)`,
     line: (p, s) => `${p.brand} ${p.model} (${p.color.en}), EU ${s} — ${p.price} ₾`,
@@ -201,7 +201,12 @@ function open(i, { push = true } = {}) {
   if (!productEl.classList.contains('open')) sound.ui('open');
   productEl.classList.add('open'); productEl.setAttribute('aria-hidden', 'false');
   document.body.classList.add('focused');
-  if (phone) { document.body.classList.add('sheet-open'); if (scene) { scene.walkTo(i); scene.sheet(true); } }
+  if (phone) {
+    document.body.classList.add('sheet-open');
+    // frame the pair in what the sheet leaves free
+    const top = $('.top').getBoundingClientRect().bottom, panel = $('.p-panel');
+    if (scene && panel) scene.setFocusBand(top + 6, innerHeight - panel.offsetHeight - 10);
+  }
   if (scene) scene.focus(i);
   setHover(-1);
   hiRes(i); hiRes((i + 1) % pairs.length); hiRes((i - 1 + pairs.length) % pairs.length);
@@ -214,8 +219,7 @@ function close({ push = true } = {}) {
   sound.ui('close');
   productEl.classList.remove('open'); productEl.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('focused', 'sheet-open');
-  if (scene && !phone) scene.focus(-1);
-  if (scene && phone) { scene.state.focus = -1; scene.sheet(false); }
+  if (scene) scene.focus(-1);
   if (push && location.hash.startsWith('#/p/')) history.pushState({}, '', '#/');
 }
 function step(d) {
@@ -349,7 +353,7 @@ canvas.addEventListener('click', e => {
   if (i >= 0) open(i);
 });
 
-// phone: swipe along the wall, tap to open
+// phone: tap a pair to take it off the shelf (it lights up first); tap the wall to put it back
 let lastX = 0, lastT = 0, vel = 0, moved = 0;
 canvas.addEventListener('pointerdown', e => {
   if (!scene || !phone) return;
@@ -358,21 +362,18 @@ canvas.addEventListener('pointerdown', e => {
   scene.pointer(e.clientX, e.clientY, true);
 });
 function dragMove(e) {
-  const now = performance.now(), dx = e.clientX - lastX;
-  moved += Math.abs(dx);
-  if (moved > 6) { scene.walkDrag(dx, false); if (current >= 0) close(); }
-  vel = vel * 0.6 + (dx / Math.max(1, now - lastT)) * 1000 * 0.4;
-  lastX = e.clientX; lastT = now;
+  moved = Math.max(moved, Math.hypot(e.clientX - down.x, e.clientY - down.y));
   scene.pointer(e.clientX, e.clientY, true);
 }
 const endDrag = e => {
   if (!down || !scene) return;
-  const tap = moved < 8;
+  const tap = moved < 10;
   down = null;
   if (tap) {
     const i = scene.pick(e.clientX, e.clientY);
-    if (i >= 0) { if (i !== scene.walkIndex()) scene.walkTo(i); else open(i); }
-  } else scene.walkDrag(0, true, vel);
+    if (current >= 0) { if (i !== current) close(); }
+    else if (i >= 0) { setHover(i); sound.ui('hover'); setTimeout(() => { if (current < 0) open(i); }, 160); }
+  }
   setTimeout(() => scene.pointer(0, 0, false), 900);
 };
 canvas.addEventListener('pointerup', endDrag);
@@ -382,7 +383,7 @@ canvas.addEventListener('pointercancel', endDrag);
 const dots = $('#dots');
 let wbIndex = -1;
 function updateWalkbar(force) {
-  if (!phone || !scene) return;
+  if (!phone || !scene || scene.state.mode !== 'walk') return;
   const i = scene.walkIndex();
   if (i === wbIndex && !force) return;
   if (!force) sound.ui('step');
@@ -471,19 +472,14 @@ async function boot() {
   const bitmaps = [];
   const lo = Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 512)).then(b => { bitmaps[i] = b; reel?.set('pair', b, i); scene?.setShoeImage(i, b, false); tickLoad(); })));
 
-  // The box. Browsers only let a page start sound after a click on it, and opening the box is that click.
-  // Phones and tablets ask every visit. On a computer the box shows until it has been opened once; after
-  // that the loader starts straight away: with sound if they chose sound and the browser lets the page
-  // start it on its own, otherwise silent with "Sound on" in the loader (and sound back on their first click).
-  // Chrome treats a reload as a new page, so a reload usually starts silent.
+  // The box, every visit. Browsers only let a page start sound after a click on that page (Chrome counts a
+  // reload as a new page), and opening the box is that click. The one exception: on a computer, if they chose
+  // sound before and the browser lets this page start it by itself, the loader goes straight in with sound.
   const touch = matchMedia('(hover: none) and (pointer: coarse)').matches;
   let showBox = !!reel && !capture && !params.has('nogate');
-  if (showBox && !touch && store.get('opened', false)) {
-    showBox = false;
-    if (store.get('sound', false) && await sound.tryStart()) setSoundUI(true);
-  }
+  if (showBox && !touch && store.get('sound', false) && await sound.tryStart()) { setSoundUI(true); showBox = false; }
   const gateP = showBox
-    ? reel.gate({ onOpen: withSound => { store.set('opened', true); return withSound ? soundOn() : (soundOff(), null); } })
+    ? reel.gate({ onOpen: withSound => (withSound ? soundOn() : (soundOff(), null)) })
     : null;
   // sound left on but not allowed to start yet (and no box to ask): start on their first click
   if (!gateP && !sound.on && store.get('sound', false)) {
@@ -494,15 +490,15 @@ async function boot() {
 
   // let the first frame paint before the GPU work starts (a background tab gets no frames: don't wait for one)
   await Promise.race([new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))), sleep(150)]);
-  try { scene = createScene(canvas, { catalog, tier: phone ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay, manual: capture }); } catch (e) { console.error(e); scene = null; }
+  try { scene = createScene(canvas, { catalog, tier: phone && !capture ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay, manual: capture, film: capture }); } catch (e) { console.error(e); scene = null; }
   bitmaps.forEach((b, i) => b && scene && scene.setShoeImage(i, b, false));
-  const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + 30), FOOT + 50); };
+  const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + (phone ? 16 : 30)), phone ? 52 : FOOT + 50); };
   const sceneReady = (async () => {
     if (!scene) throw new Error('no webgl');
     margins();
-    scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR });
+    scene.layout('wall', { start: ANCHOR });
     await scene.ready;
-    scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR });
+    scene.layout('wall', { start: ANCHOR });
     await lo;
   })();
   let sceneOk = null;
@@ -521,11 +517,15 @@ async function boot() {
   if (capture && reel) {
     await anchorP; await sceneReady; await Promise.allSettled([document.fonts.ready]);
     await new Promise(r => { const k = setInterval(() => { if (loaded >= total) { clearInterval(k); r(); } }, 50); });
+    // the film shows the wall the way a real GPU does: every pair's sharp layer, mipmapped
+    await Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 1024)).then(b => { scene.setShoeImage(i, b, true); hiDone.add(i); })));
+    await sleep(500); scene.renderOnce();
     reel.prepare();
     const { renderScore } = await import('./sound.js');
     window.__cap = {
       reel, scene,
-      land: () => { scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land(); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); },
+      // the hand-off: the reel stays on top so the film can dissolve it by hand (reel.dissolve)
+      land: () => { scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land({ keep: true }); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); },
       // the score for the preview video, as base64 WAV
       score: async ({ boxAt, openDur, reelAt, landAt }) => {
         const sweep = pairs.map((_, k) => 0.55 + k * 0.065);
@@ -572,12 +572,13 @@ async function boot() {
   const anchorBmp = await anchorP;
   if (anchorBmp && !hiDone.has(ANCHOR)) { scene.setShoeImage(ANCHOR, anchorBmp, true); hiDone.add(ANCHOR); }
   // the window may have changed between phone and desktop while the loader ran
-  if (phoneQ.matches !== phone) { phone = phoneQ.matches; margins(); scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR }); }
+  if (phoneQ.matches !== phone) { phone = phoneQ.matches; margins(); scene.layout('wall', { start: ANCHOR }); }
   scene.resize();
   if (matchCut) {
     scene.introShot(ANCHOR, reel.anchorRect());
     scene.renderOnce();
-    reel.land();
+    // the loader dissolves into the real wall (same pair, same pixels) as the camera starts to pull back
+    reel.land({ fade: true });
   } else {
     if (!reel) html.classList.add('fade-in');
     scene.reveal({ instant: true }); scene.renderOnce();
@@ -585,11 +586,11 @@ async function boot() {
   }
   if (reel) sound.land(reduced ? [] : pairs.map((_, k) => 0.55 + k * 0.065));
   html.classList.add('ready', 'revealing'); html.classList.remove('loading', 'intro');
-  setTimeout(() => html.classList.remove('revealing'), 2600);
+  setTimeout(() => html.classList.remove('revealing'), 4200);
   addEventListener('resize', () => {
     const was = phone; phone = phoneQ.matches;
     margins();
-    if (was !== phone) { close({ push: false }); scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR }); updateWalkbar(true); }
+    if (was !== phone) { close({ push: false }); scene.layout('wall', { start: ANCHOR }); }
     else scene.resize();
   });
   document.fonts?.ready.then(() => { margins(); if (current < 0 && !scene.state.held) scene.resize(); });
@@ -597,7 +598,8 @@ async function boot() {
   scene.reveal({ instant: !matchCut });
   updateWalkbar(true);
   const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
-  if (!phone && !scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 2200 + i * 140)));
+  // the sharp layers come in once the pull-back is over (uploading them mid-move can drop a frame)
+  if (!phone && !scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 3300 + i * 120)));
 }
 function route(push) {
   const m = location.hash.match(/^#\/p\/([\w-]+)/);

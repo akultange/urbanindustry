@@ -48,7 +48,7 @@ html[lang='ka'] .kicker { font: 500 12px/1.35 var(--ka); letter-spacing: .02em; 
 .reel canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; visibility: hidden; }
 .reel canvas.drawn { visibility: visible; }
 .reel[data-tone='k'] { color: #0e0f12; }
-.reel.fade { opacity: 0; transition: opacity 420ms linear; }
+.reel.fade { opacity: 0; transition: opacity 420ms cubic-bezier(.33, 0, .2, 1); pointer-events: none; }
 .reel-hud { position: absolute; inset: 0; pointer-events: none; font: 500 10px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 html[lang='ka'] .reel-hud { font: 500 11.5px/1 var(--ka); letter-spacing: .03em; }
 .reel-hud > span { position: absolute; white-space: nowrap; }
@@ -80,9 +80,10 @@ html[lang='ka'] .r-open { font: 500 14px/1 var(--ka); }
 .r-open:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -14px rgba(14, 30, 60, .7); }
 .r-open:active { transform: scale(.98); }
 .r-eq { display: inline-flex; align-items: center; gap: 2px; height: 12px; }
-.r-eq b { width: 2px; height: 4px; border-radius: 1px; background: var(--accent); animation: eq 800ms ease-in-out infinite alternate; }
-.r-eq b:nth-child(2) { animation-delay: -250ms; animation-duration: 650ms; }
-.r-eq b:nth-child(3) { animation-delay: -500ms; animation-duration: 950ms; }
+/* the resting heights still read as sound bars where the animation can't run (reduced motion, the film) */
+.r-eq b { width: 2px; height: 5px; border-radius: 1px; background: var(--accent); animation: eq 800ms ease-in-out infinite alternate; }
+.r-eq b:nth-child(2) { height: 11px; animation-delay: -250ms; animation-duration: 650ms; }
+.r-eq b:nth-child(3) { height: 7px; animation-delay: -500ms; animation-duration: 950ms; }
 .r-mute { padding: 6px 10px; color: rgba(14, 15, 18, .72); font: 500 12px/1 var(--sans); border-bottom: 1px solid transparent; transition: color 160ms; }
 html[lang='ka'] .r-mute { font: 500 12.5px/1 var(--ka); }
 .r-mute:hover { color: #0e0f12; }
@@ -93,9 +94,10 @@ html.fade-in #gl { animation: gl-in 700ms linear both; }
 @keyframes gl-in { from { opacity: 0; } }
 /* the chrome comes in after the cut */
 html.intro .top .nav, html.intro .top .actions, html.intro .bottom, html.intro #veil { opacity: 0; }
-html.revealing .top .nav, html.revealing .top .actions, html.revealing #veil { transition: opacity 800ms var(--ease) 600ms; }
-html.revealing .bottom { transition: opacity 800ms var(--ease) 1100ms; }
-html.revealing .walkbar { transition: opacity 600ms var(--ease) 900ms, transform 800ms var(--ease) 900ms; }
+/* ...once the sign is on (scene.js SIGN_ON + its flicker), at the end of the pull-back */
+html.revealing .top .nav, html.revealing .top .actions, html.revealing #veil { transition: opacity 900ms var(--ease) 2800ms; }
+html.revealing .bottom { transition: opacity 900ms var(--ease) 3100ms; }
+html.revealing .walkbar { transition: opacity 600ms var(--ease) 2900ms, transform 800ms var(--ease) 2900ms; }
 #veil { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(rgba(8, 9, 11, .62), rgba(8, 9, 11, 0) 12%, rgba(8, 9, 11, 0) 86%, rgba(8, 9, 11, .5)); }
 html.no-gl #gl, html.no-gl #veil { display: none; }
 
@@ -356,7 +358,11 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
   .nav { display: none; }
   .logo { height: 15px; }
   .actions { gap: 14px; }
-  .bottom { display: none; }
+  /* the wall's footer, slimmed to what to do */
+  .bottom { height: 44px; grid-template-columns: 1fr; padding: 0 var(--pad); padding-bottom: env(safe-area-inset-bottom); }
+  .bottom .ig, .bottom .status { display: none; }
+  .bottom .hint { justify-self: center; font-size: 12px; text-align: center; }
+  .hint-touch { display: inline; }
   .r-cap { top: auto; bottom: 62px; }
   .r-sound { bottom: 17px; }
   .actions { gap: 10px; }
@@ -366,7 +372,7 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
   .hint-desk { display: none; }
   #labels { display: none; }
   .walkbar {
-    display: grid; position: fixed; z-index: 16; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+    display: none; position: fixed; z-index: 16; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
     grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; align-items: end; gap: 4px 12px;
     padding: 16px 16px 14px; border-radius: 22px; background: rgba(14, 15, 18, .78);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line);
@@ -385,7 +391,7 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
   .product { z-index: 30; }
   .p-left, .p-nav { display: none; }
   .p-panel {
-    position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 82svh;
+    position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 62svh; overflow-y: auto;
     padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0;
     background: rgba(14, 15, 18, .95); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     border-top: 1px solid var(--line); transform: translateY(105%); opacity: 1;
@@ -409,4 +415,6 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+  /* no pull-back to wait for: the chrome comes straight in */
+  html.revealing .top .nav, html.revealing .top .actions, html.revealing #veil, html.revealing .bottom { transition-delay: 0ms !important; }
 }

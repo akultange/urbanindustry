@@ -10,6 +10,8 @@
 // Browsers only allow sound after the visitor's first click or tap, so nothing plays until
 // enable() is called from one.
 
+import { SIGN_ON } from './scene.js';
+
 const F1 = 43.65;
 const PENTA = [698.46, 830.61, 932.33, 1046.5, 1244.51, 1396.91, 1661.22, 1864.66, 2093.0, 2489.02]; // F5 Ab5 Bb5 C6 Eb6 F6 ...
 
@@ -132,27 +134,31 @@ export function createEngine(ctx) {
     tone(b, t, { f: 58, to: 31, glide: 1.2, gain: 0.95, dec: 1.8 });            // sub drop
     kick(b, t, 1.1);
     noiseHit(b, t, { type: 'lowpass', f: 3200, sweepTo: 400, q: 0.5, gain: 0.32, dec: 0.9 });
-    // the sign hums on: a little flicker, then a steady buzz that settles down
+    // the sign at the end of the pull-back (scene.js signFlicker): two blinks, each a tick and a burst of
+    // buzz, then a relay clunk and the buzz comes on for good and settles
+    const s0 = t + SIGN_ON;
     const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 100;
     const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = 200;
     const flt = ctx.createBiquadFilter(); flt.type = 'bandpass'; flt.frequency.value = 1300; flt.Q.value = 1.1;
     const g = ctx.createGain(); g.gain.setValueAtTime(0, t);
-    [[0.3, 0.05], [0.34, 0], [0.38, 0.06], [0.42, 0.01], [0.47, 0.055]].forEach(([dt, v]) => g.gain.setValueAtTime(v, t + dt));
-    g.gain.linearRampToValueAtTime(0.03, t + 1.6); g.gain.linearRampToValueAtTime(0.012, t + 2.6); g.gain.linearRampToValueAtTime(0, t + 3.4);
+    [[0, 0.06], [0.06, 0], [0.2, 0.045], [0.25, 0], [0.48, 0.07]].forEach(([dt, v]) => g.gain.setValueAtTime(v, s0 + dt));
+    g.gain.linearRampToValueAtTime(0.03, s0 + 1.4); g.gain.linearRampToValueAtTime(0.012, s0 + 2.6); g.gain.linearRampToValueAtTime(0, s0 + 3.6);
     const o2g = ctx.createGain(); o2g.gain.value = 0.25;
     o.connect(flt); o2.connect(o2g); o2g.connect(flt); flt.connect(g); g.connect(b);
-    o.start(t); o2.start(t); o.stop(t + 3.5); o2.stop(t + 3.5);
+    o.start(t); o2.start(t); o.stop(s0 + 3.7); o2.stop(s0 + 3.7);
+    [0, 0.2, 0.48].forEach((dt, k) => noiseHit(b, s0 + dt, { type: 'bandpass', f: 2600 - k * 300, q: 3, gain: 0.13, dec: 0.012 }));
+    tone(b, s0 + 0.48, { f: 150, to: 70, glide: 0.07, gain: 0.32, dec: 0.12 });
     // each shelf LED rings as it strikes: a rising arpeggio along the wall
     sweep.forEach((dt, k) => bell(b, t + dt, PENTA[k % PENTA.length], 0.045));
     // the pull-back: air moving
     noiseHit(b, t + 0.05, { type: 'lowpass', f: 2400, sweepTo: 260, q: 0.6, a: 0.5, gain: 0.07, dec: 1.6 });
-    // and a soft chord to resolve on (Ab add9)
+    // and a soft chord to resolve on (Ab add9), opening up as the sign comes on
     [103.83, 155.56, 261.63, 466.16].forEach((f, k) => {
       const p = ctx.createOscillator(); p.type = 'sawtooth'; p.frequency.value = f; p.detune.value = (k % 2 ? 6 : -6);
-      const pl = ctx.createBiquadFilter(); pl.type = 'lowpass'; pl.frequency.value = 1100;
-      const pg = ctx.createGain(); pg.gain.setValueAtTime(0, t + 0.2); pg.gain.linearRampToValueAtTime(0.028, t + 1.0);
-      pg.gain.setValueAtTime(0.028, t + 1.8); pg.gain.linearRampToValueAtTime(0, t + 4.0);
-      p.connect(pl); pl.connect(pg); pg.connect(b); p.start(t + 0.2); p.stop(t + 4.1);
+      const pl = ctx.createBiquadFilter(); pl.type = 'lowpass'; pl.frequency.setValueAtTime(700, t); pl.frequency.linearRampToValueAtTime(1300, s0 + 0.6);
+      const pg = ctx.createGain(); pg.gain.setValueAtTime(0, t + 0.2); pg.gain.linearRampToValueAtTime(0.022, t + 1.2);
+      pg.gain.linearRampToValueAtTime(0.03, s0 + 0.6); pg.gain.setValueAtTime(0.03, s0 + 1.2); pg.gain.linearRampToValueAtTime(0, s0 + 3.4);
+      p.connect(pl); pl.connect(pg); pg.connect(b); p.start(t + 0.2); p.stop(s0 + 3.5);
     });
   }
 
@@ -253,8 +259,9 @@ export function createSound() {
   return api;
 }
 
-// for the preview video: the same score rendered offline, returned as a 16-bit WAV (times in s)
-export async function renderScore({ timeline, boxAt = -1, openDur = 1.3, reelAt = 0, landAt, sweep = [], tail = 4.2, sr = 48000 }) {
+// for the preview video: the same score rendered offline, returned as a 16-bit WAV (times in s). It runs on
+// past the landing until the sign's buzz and the chord have died away (they end SIGN_ON + 3.7 s after it)
+export async function renderScore({ timeline, boxAt = -1, openDur = 1.3, reelAt = 0, landAt, sweep = [], tail = SIGN_ON + 4.2, sr = 48000 }) {
   const last = timeline[timeline.length - 1];
   const len = Math.ceil((landAt + tail) * sr);
   const oc = new OfflineAudioContext(2, len, sr);

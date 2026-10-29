@@ -361,7 +361,8 @@ void main() {
   float edge = clamp(a - inner, 0.0, 1.0);
   vec3 face = vec3(0.93, 0.95, 0.99) * (0.16 + 0.55 * uKey.w * wash * 4.0);
   vec3 lit = vec3(0.78, 0.81, 0.87) + vec3(0.2, 0.32, 0.6) * edge * 0.3;
-  vec3 col = mix(face * 0.42, lit, uSignK);
+  // switched off it sits dark in the dim room, so it doesn't jump out before it powers on
+  vec3 col = mix(face * 0.12, lit, uSignK);
   col += cursorLight(vPos, vec3(0.0, 0.0, 1.0), normalize(uCam - vPos), vec3(0.9), 40.0, 0.2);
   o = vec4(col * a * uPower, a * uPower);
 }
@@ -427,7 +428,10 @@ void main() {
 
 export const COMPOSITE_FS = HEAD + `
 uniform sampler2D uScene; uniform sampler2D uBloom;
-uniform float uBloomK, uExposure, uTime, uGrain, uVig, uAspect;
+uniform sampler2D uSoft; uniform sampler2D uSoft2;   // the scene at 1/4 and 1/8 size: depth of field
+uniform float uBloomK, uExposure, uTime, uGrain, uVig, uAspect, uDof;
+uniform vec4 uFocus;                                  // centre (uv) and half size (uv) of what's in focus
+uniform vec3 uZoom;                                   // zoom centre (uv) and blur length (fraction of the radius)
 uniform vec2 uRes;
 in vec2 vUV; out vec4 o;
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
@@ -437,9 +441,22 @@ void main() {
   float r2 = dot(c * vec2(uAspect, 1.0), c * vec2(uAspect, 1.0));
   vec2 off = c * r2 * 0.002;
   vec3 hdr;
-  hdr.r = texture(uScene, vUV - off).r;
-  hdr.g = texture(uScene, vUV).g;
-  hdr.b = texture(uScene, vUV + off).b;
+  if (uZoom.z > 0.0005) {
+    // the pull-back's motion blur: average along the line to the zoom centre (where things are moving)
+    vec2 dir = (vUV - uZoom.xy) * uZoom.z;
+    hdr = vec3(0.0);
+    for (int i = 0; i < 12; i++) hdr += texture(uScene, vUV + dir * (float(i) / 11.0 - 0.5)).rgb;
+    hdr /= 12.0;
+  } else {
+    hdr.r = texture(uScene, vUV - off).r;
+    hdr.g = texture(uScene, vUV).g;
+    hdr.b = texture(uScene, vUV + off).b;
+  }
+  // the hand-off from the loader: a macro lens on the pair, the wall around it soft, racking out as we pull back
+  if (uDof > 0.001) {
+    float m = smoothstep(1.05, 2.5, length((vUV - uFocus.xy) / max(uFocus.zw, vec2(1e-4)))) * uDof;
+    hdr = mix(hdr, 0.5 * (texture(uSoft, vUV).rgb + texture(uSoft2, vUV).rgb), m);
+  }
   hdr += texture(uBloom, vUV).rgb * uBloomK;
   hdr *= uExposure;
   vec3 col = aces(hdr);

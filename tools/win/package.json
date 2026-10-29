@@ -1,0 +1,10 @@
+{
+  "name": "urbanindustry-film",
+  "private": true,
+  "description": "Films the Urban Industry intro on this PC's graphics card (4K, 60 fps, with sound)",
+  "scripts": { "film": "node film.js" },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "puppeteer-core": "^25.16.0"
+  }
+}

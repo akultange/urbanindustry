@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer-core');
 const m = require('@sparticuz/chromium'); const chromium = m.default || m;
 const fs = require('fs');
 const { execFileSync } = require('child_process');
-const [url = 'http://127.0.0.1:8765/', out = 'qa/reel', kind = 'desk', fpsArg = '30'] = process.argv.slice(2);
+const [url = 'http://127.0.0.1:8765/', out = 'qa/reel', kind = 'desk', fpsArg = '60'] = process.argv.slice(2);
 const FPS = +fpsArg;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 fs.mkdirSync(out, { recursive: true });
@@ -14,7 +14,7 @@ fs.mkdirSync(out, { recursive: true });
   const logs = [];
   p.on('console', msg => { if (['error', 'warning'].includes(msg.type())) logs.push(`${msg.type()}: ${msg.text()}`); });
   p.on('pageerror', e => logs.push(`pageerror: ${e.message}`));
-  const vp = kind === 'phone' ? { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { width: 1280, height: 800, deviceScaleFactor: 1 };
+  const vp = kind === 'phone' ? { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { width: 1920, height: 1080, deviceScaleFactor: 1 };
   await p.setViewport(vp);
   const sep = url.includes('?') ? '&' : '?';
   await p.goto(url + sep + 'capture', { waitUntil: 'networkidle0', timeout: 90000 });
@@ -51,28 +51,36 @@ fs.mkdirSync(out, { recursive: true });
   }
   // the match cut and the pull-back, stepped by hand
   await p.evaluate(() => { window.__cap.land(); document.documentElement.classList.add('intro'); });
-  const steps = process.env.REEL_ONLY ? 2 : Math.round(2.6 * FPS);
+  // the pull-back (3 s) and the sign flickering on at its end
+  const steps = process.env.REEL_ONLY ? 2 : Math.round(3.4 * FPS);
   for (let k = 0; k < steps; k++) {
     const t = k / FPS;
     await p.evaluate((dt, t) => {
       window.__cap.scene.step(dt);
-      if (t > 0.7) document.documentElement.classList.remove('intro');
+      // the loader dissolving into the wall (style.css .reel.fade, ~cubic-bezier(.33,0,.2,1))
+      const r = window.__cap.reel, u = Math.min(1, t / (r.dissolveMs / 1000));
+      if (document.querySelector('#reel')) r.dissolve(u >= 1 ? 1 : 1 - Math.pow(1 - u, 2.2));
+      if (t > 2.85) document.documentElement.classList.remove('intro');
     }, 1 / FPS, t);
     list.push([await shot(), 1 / FPS]);
   }
-  // hold the settled wall while the sound's tail rings out
+  // hold the settled wall while the sound's tail rings out (how long is set once the score is rendered)
   list.push([list[list.length - 1][0], 1.6]);
   const last = cuts[cuts.length - 1];
   const landAt = reelAt + (last.t + last.d) / 1000;
   const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, openDur: OPEN, reelAt, landAt });
-  fs.writeFileSync(`${out}/score.wav`, Buffer.from(score.b64, 'base64'));
+  const wav = Buffer.from(score.b64, 'base64');
+  fs.writeFileSync(`${out}/score.wav`, wav);
   logs.push(`score peak ${score.peak.toFixed(3)}`);
+  // hold the last frame until the score has rung out (16-bit stereo at 48 kHz), so the film doesn't cut it off
+  const filmed = list.slice(0, -1).reduce((s, [, d]) => s + d, 0);
+  list[list.length - 1][1] = Math.max(0.5, (wav.length - 44) / 4 / 48000 - filmed);
   const txt = list.map(([f, d]) => `file '${require('path').resolve(f)}'\nduration ${d.toFixed(5)}`).join('\n') + `\nfile '${require('path').resolve(list[list.length - 1][0])}'\n`;
   fs.writeFileSync(`${out}/list.txt`, txt);
   await b.close();
   const mp4 = `${out}/reel-${kind}.mp4`;
   execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', `${out}/list.txt`, '-i', `${out}/score.wav`,
-    '-vf', `fps=60,format=yuv420p${kind === 'phone' ? ',scale=780:-2' : ''}`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+    '-vf', `fps=60,format=yuv420p${kind === 'phone' ? ',scale=780:-2' : ''}`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '15',
     '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', mp4]);
   console.log(mp4, list.length, 'frames;', logs.join('\n') || 'no console errors');
 })().catch(e => { console.error('FAILED', e); process.exit(1); });
