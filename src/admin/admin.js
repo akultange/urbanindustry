@@ -22,43 +22,43 @@ const T = {
   ka: {
     title: 'Urban Industry — ადმინ-პანელი', admin: 'ადმინ-პანელი', openSite: 'საიტის ნახვა ↗',
     onWall: 'საიტზე', wallSub: n => `${n} / ${MAX} წყვილი · საიტზე ამავე თანმიმდევრობით ჩანს`, add: '+ წყვილის დამატება',
-    offWall: 'დამალული', offWallSub: 'ეს წყვილები საიტზე არ ჩანს — ნებისმიერ დროს შეგიძლიათ დააბრუნოთ.', archiveEmpty: 'დამალული წყვილები არ არის.',
+    offWall: 'დამალული', offWallSub: 'ეს წყვილები საიტზე არ ჩანს — ნებისმიერ დროს შეგიძლია დააბრუნო.', archiveEmpty: 'დამალული წყვილები არ არის.',
     preview: 'წინასწარი ნახვა', publish: 'გამოქვეყნება', intro: 'ინტრო', earlier: 'წინ გადატანა', later: 'უკან გადატანა',
     demo: 'სადემონსტრაციო რეჟიმი: ყველაფერი მუშაობს, მაგრამ ცვლილებები მხოლოდ ამ ბრაუზერში შეინახება.',
     signInCta: 'შესვლა',
-    signedIn: (u, r) => `შესული ხართ: <b>@${u}</b> · ${r}`, signOut: 'გასვლა',
-    keyFailed: 'შენახული ტოკენი აღარ მუშაობს — გთხოვთ, ხელახლა შეხვიდეთ.',
+    signedIn: (u, r) => `შესული ხარ: <b>@${u}</b> · ${r}`, signOut: 'გასვლა',
+    keyFailed: 'შენახული ტოკენი აღარ მუშაობს — ხელახლა შედი.',
     changes: n => `<b>${n}</b> გამოუქვეყნებელი ცვლილება`,
     newPair: 'ახალი წყვილი', editPair: 'რედაქტირება',
-    photoTitle: 'ფოტო', photoHint: 'ატვირთეთ ერთი ფეხსაცმლის ფოტო გვერდიდან — ფონი ავტომატურად მოშორდება. ფოტოზე ხელი ან ფეხი არ უნდა ჩანდეს.',
+    photoTitle: 'ფოტო', photoHint: 'ატვირთე ერთი ფეხსაცმლის ფოტო გვერდიდან — ფონი ავტომატურად მოშორდება. ფოტოზე ხელი ან ფეხი არ უნდა ჩანდეს.',
     choose: 'ფოტოს ატვირთვა', change: 'ფოტოს შეცვლა', flip: 'შებრუნება ↔', straighten: 'დახრა', edge: 'კონტური',
-    keepBg: 'ფონი უკვე მოშორებულია',
+    removeBg: 'ფონის მოშორება',
     loadingModel: p => `ფონის მოშორება მზადდება… ${p}%<br><small>ეს მხოლოდ პირველად ხდება</small>`,
     finding: 'ფონს ვაშორებთ…', saving: 'ინახება…',
     plainOnly: 'ავტომატური მოშორება ვერ ჩაიტვირთა, ამიტომ ფონი ფერის მიხედვით მოვაშორეთ. ერთფეროვან ფონზე ეს კარგად მუშაობს.',
-    busyBg: 'ფონი ჭრელია — თუ რამე დარჩა, სცადეთ ერთფეროვან ფონზე გადაღებული ფოტო.',
-    readFailed: 'ფოტო ვერ გაიხსნა — სცადეთ JPEG ან PNG.',
+    busyBg: 'ფონი ჭრელია — თუ რამე დარჩა, სცადე ერთფეროვან ფონზე გადაღებული ფოტო.',
+    readFailed: 'ფოტო ვერ გაიხსნა — სცადე JPEG ან PNG.',
     brand: 'ბრენდი', model: 'მოდელი', colorKa: 'ფერი (ქართულად)', colorEn: 'ფერი (ინგლისურად)', price: 'ფასი',
-    sizes: 'ზომები (EU)', inStock: 'მარაგშია', soldOut: 'ამოიწურა', sizesHint: 'ერთხელ დააჭირეთ — მარაგშია, ორჯერ — ამოიწურა, სამჯერ — ზომა მოიხსნება.',
-    more: 'აღწერა და ფოტოები', descKa: 'აღწერა (ქართულად)', descEn: 'აღწერა (ინგლისურად)', feed: 'ფოტოები Instagram-იდან',
+    sizes: 'ზომები (EU)', inStock: 'მარაგშია', soldOut: 'ამოიწურა', sizesHint: 'ერთხელ დააჭირე — მარაგშია, ორჯერ — ამოიწურა, სამჯერ — ზომა მოიხსნება.',
+    more: 'აღწერა და ფოტოები', descKa: 'აღწერა (ქართულად)', descEn: 'აღწერა (ინგლისურად)', feed: 'ფოტოები ინსტაგრამიდან',
     delete: 'წაშლა', done: 'შენახვა', takeOff: 'დამალვა', putOn: 'საიტზე დაბრუნება',
-    wallFull: 'საიტზე უკვე 10 წყვილია — ახლის დასამატებლად ჯერ ერთ-ერთი დამალეთ.', wentOff: 'საიტზე უკვე 10 წყვილია, ამიტომ ახალი წყვილი დამალულებში შევინახეთ.',
-    errName: 'მიუთითეთ ბრენდი და მოდელი.', errPrice: 'მიუთითეთ ფასი.', errSizes: 'მონიშნეთ ერთი ზომა მაინც.', errPhoto: 'ატვირთეთ ფოტო.',
+    wallFull: 'საიტზე უკვე 10 წყვილია — ახლის დასამატებლად ჯერ ერთ-ერთი დამალე.', wentOff: 'საიტზე უკვე 10 წყვილია, ამიტომ ახალი წყვილი დამალულებში შევინახეთ.',
+    errName: 'მიუთითე ბრენდი და მოდელი.', errPrice: 'მიუთითე ფასი.', errSizes: 'მონიშნე ერთი ზომა მაინც.', errPhoto: 'ატვირთე ფოტო.',
     confirmDelete: n => `წავშალოთ ${n}?`, introLocked: 'საიტის ინტრო ამ წყვილზეა აწყობილი, ამიტომ მისი დამალვა არ შეიძლება.',
     sizesSum: (n, o) => `${n} ზომა${o ? ` · ${o} ამოიწურა` : ''}`,
-    signIn: 'შესვლა', signInLead: 'საიტი GitHub-ზეა განთავსებული და ცვლილებებიც იქ ქვეყნდება. ამისთვის ერთხელ დაგჭირდებათ ტოკენი — ის მხოლოდ ამ ბრაუზერში შეინახება.',
-    steps: ['გახსენით <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → ახალი ტოკენი</a> (Fine-grained token).',
+    signIn: 'შესვლა', signInLead: 'საიტი GitHub-ზეა განთავსებული და ცვლილებებიც იქ ქვეყნდება. ამისთვის ერთხელ დაგჭირდება ტოკენი — ის მხოლოდ ამ ბრაუზერში შეინახება.',
+    steps: ['გახსენი <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → ახალი ტოკენი</a> (Fine-grained token).',
       'Repository access: <b>Only select repositories</b> → <code>urbanindustry</code>.',
-      'Permissions → Repository → <b>Contents: Read and write</b>.', '<b>Generate token</b> — დააკოპირეთ (იწყება <code>github_pat_</code>-ით) და ჩასვით აქ.'],
+      'Permissions → Repository → <b>Contents: Read and write</b>.', '<b>Generate token</b> — დააკოპირე (იწყება <code>github_pat_</code>-ით) და ჩასვი აქ.'],
     key: 'ტოკენი', repoAdv: 'რეპოზიტორი', signInGo: 'შესვლა', badKey: 'ეს ტოკენი არ მუშაობს.', noRepo: r => `ამ ტოკენს ${r}-ზე წვდომა არ აქვს.`,
     publishGo: 'გამოქვეყნება', discard: 'ცვლილებების გაუქმება', confirmDiscard: 'გავაუქმოთ ყველა გამოუქვეყნებელი ცვლილება?',
     needSignIn: 'გამოსაქვეყნებლად საჭიროა შესვლა.', publishing: 'ქვეყნდება…', published: 'გამოქვეყნდა. საიტი დაახლოებით ერთ წუთში განახლდება.',
     live: 'საიტი განახლდა ✓', nothing: 'გამოსაქვეყნებელი არაფერია.',
-    conflict: 'ამასობაში სხვამ გამოაქვეყნა ცვლილებები. განაახლეთ გვერდი, რომ ნახოთ — თქვენი ცვლილებები ამ ბრაუზერში შენახული დარჩება.',
+    conflict: 'ამასობაში სხვამ გამოაქვეყნა ცვლილებები. განაახლე გვერდი, რომ ნახო — შენი ცვლილებები ამ ბრაუზერში შენახული დარჩება.',
     noWrite: 'ამ ტოკენით გამოქვეყნება ვერ ხერხდება — საჭიროა Contents: Read and write.', failed: e => `ვერ გამოქვეყნდა: ${e}`,
     chAdded: n => `დაემატა: ${n}`, chDeleted: n => `წაიშალა: ${n}`, chOn: n => `საიტზე დაბრუნდა: ${n}`, chOff: n => `დაიმალა: ${n}`,
     chOrder: 'შეიცვალა თანმიმდევრობა', fPrice: (a, b) => `ფასი ${a} → ${b} ₾`, fSizes: 'ზომები', fPhoto: 'ფოტო', fText: 'ტექსტი',
-    discarded: 'ცვლილებები გაუქმდა.', saved: 'შენახულია. საიტზე გამოქვეყნების შემდეგ გამოჩნდება.', previewHint: 'წინასწარი ნახვა ახალ ჩანართში გაიხსნება — მას მხოლოდ თქვენ ხედავთ.',
+    discarded: 'ცვლილებები გაუქმდა.', saved: 'შენახულია. საიტზე გამოქვეყნების შემდეგ გამოჩნდება.', previewHint: 'წინასწარი ნახვა ახალ ჩანართში გაიხსნება — მას მხოლოდ შენ ხედავ.',
   },
   en: {
     title: 'Urban Industry — Admin', admin: 'Admin', openSite: 'Site ↗',
@@ -73,7 +73,7 @@ const T = {
     newPair: 'New pair', editPair: 'Edit pair',
     photoTitle: 'Photo', photoHint: 'One shoe from the side — the background comes off by itself. Hands and feet stay in.',
     choose: 'Choose a photo', change: 'Change the photo', flip: 'Mirror', straighten: 'Straighten', edge: 'Edge',
-    keepBg: 'Keep the background (the photo is already cut out)',
+    removeBg: 'Remove the background',
     loadingModel: p => `Getting the cut-out tool… ${p}%<br><small>first time only</small>`,
     finding: 'Finding the pair…', saving: 'Saving…',
     plainOnly: "Couldn't get the cut-out tool, so the background was taken out by colour — that works on a plain one.",
@@ -314,7 +314,7 @@ function fillEditor() {
   // the picture: the one being cut, else the pair's current one
   const st = $('#stage'), im = $('#stage-img');
   $('#pic-tune').hidden = !ed.pic;
-  $('#keep-bg').checked = !!(ed.pic && ed.pic.keepBg);
+  $('#remove-bg').checked = !(ed.pic && ed.pic.keepBg);   // ticked: the background comes off
   $('#rotate').value = ed.pic ? ed.pic.rotate : 0; $('#tol').value = ed.pic ? ed.pic.tol : 1;
   $('#tol').closest('label').hidden = !!(ed.pic && ed.pic.keepBg);
   $('#pic-note').textContent = ed.pic ? ed.pic.note || '' : '';
@@ -394,7 +394,7 @@ $('#flip').onclick = () => { if (ed && ed.pic) { ed.pic.flip = !ed.pic.flip; rel
 $('#rotate').addEventListener('input', e => { if (ed && ed.pic) { ed.pic.rotate = +e.target.value; relayer(); } });
 let tolT = 0;
 $('#tol').addEventListener('input', e => { if (!ed || !ed.pic) return; ed.pic.tol = +e.target.value; clearTimeout(tolT); tolT = setTimeout(recut, 120); });
-$('#keep-bg').addEventListener('change', e => { if (ed && ed.pic) { ed.pic.keepBg = e.target.checked; recut(); } });
+$('#remove-bg').addEventListener('change', e => { if (ed && ed.pic) { ed.pic.keepBg = !e.target.checked; recut(); } });
 // an existing pair, mirrored: take its current picture through the same layout, flipped
 async function flipExisting() {
   const url = await shoeURL({ ...ed.d, id: ed.id }, 1024);

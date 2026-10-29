@@ -28,7 +28,7 @@ const COPY = {
     field: 'Nike Dunk Low', night: 'The wall', day: 'The wall', blueprint: 'Side view — EU 36–45', beam: 'Light it up',
     silhouette: 'A classic', held: 'From our feed', halftone: '144K on Instagram', price: 'In stock',
     swatch: 'Colourways', box: 'Ships worldwide',
-    gateQ: 'What’s in the box?', gateOpen: 'გახსენით ხმით', gateMute: 'ან გახსენით ხმის გარეშე',
+    gateQ: 'What’s in the box?', gateOpen: 'გახსენი ხმით', gateMute: 'ან გახსენი ხმის გარეშე',
   },
 };
 
