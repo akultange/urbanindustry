@@ -24,8 +24,8 @@ fs.mkdirSync(out, { recursive: true });
   const list = [];
   let n = 0;
   const shot = async () => { const f = `${out}/f${String(n++).padStart(4, '0')}.png`; await p.screenshot({ path: f }); return f; };
-  // the closed box, then the lid coming off (the visitor's tap is at GATE seconds)
-  const GATE = process.env.NO_GATE ? 0 : 1.2, OPEN = 0.56;
+  // the closed box, then the opening (the visitor's tap is at GATE seconds)
+  const GATE = process.env.NO_GATE ? 0 : 1.2, OPEN = await p.evaluate(() => window.__cap.reel.openMs / 1000);
   if (GATE) {
     await p.evaluate(() => { window.__cap.reel.gate(); });
     list.push([await shot(), GATE]);
@@ -64,7 +64,7 @@ fs.mkdirSync(out, { recursive: true });
   list.push([list[list.length - 1][0], 1.6]);
   const last = cuts[cuts.length - 1];
   const landAt = reelAt + (last.t + last.d) / 1000;
-  const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, reelAt, landAt });
+  const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, openDur: OPEN, reelAt, landAt });
   fs.writeFileSync(`${out}/score.wav`, Buffer.from(score.b64, 'base64'));
   logs.push(`score peak ${score.peak.toFixed(3)}`);
   const txt = list.map(([f, d]) => `file '${require('path').resolve(f)}'\nduration ${d.toFixed(5)}`).join('\n') + `\nfile '${require('path').resolve(list[list.length - 1][0])}'\n`;

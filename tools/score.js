@@ -12,9 +12,10 @@ const [url = 'http://127.0.0.1:8765/', out = 'qa/reel', kind = 'desk'] = process
   await p.goto(url + (url.includes('?') ? '&' : '?') + 'capture', { waitUntil: 'networkidle0', timeout: 120000 });
   await p.waitForFunction(() => window.__cap, { timeout: 240000 });
   const cuts = await p.evaluate(() => window.__cap.reel.timeline());
-  const GATE = process.env.NO_GATE ? 0 : 1.2, OPEN = 0.56, reelAt = GATE ? GATE + OPEN : 0;
+  const OPEN = await p.evaluate(() => window.__cap.reel.openMs / 1000);
+  const GATE = process.env.NO_GATE ? 0 : 1.2, reelAt = GATE ? GATE + OPEN : 0;
   const last = cuts[cuts.length - 1];
-  const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, reelAt, landAt: reelAt + (last.t + last.d) / 1000 });
+  const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, openDur: OPEN, reelAt, landAt: reelAt + (last.t + last.d) / 1000 });
   fs.writeFileSync(`${out}/score.wav`, Buffer.from(score.b64, 'base64'));
   await b.close();
   const mp4 = `${out}/reel-${kind}.mp4`;

@@ -11,7 +11,6 @@ const ASSET = window.__ASSET_BASE || 'assets/';
 const IG = 'https://ig.me/m/urbanindustry_';
 // the loader plays for everyone; reduced motion only swaps the camera moves for fades.
 // ?reel always plays the full loader (a repeat visit otherwise gets the short one)
-const forceReel = new URLSearchParams(location.search).has('reel');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sound = createSound();
 const phoneQ = matchMedia('(max-width: 760px), (pointer: coarse) and (max-width: 1024px) and (orientation: portrait)');
@@ -80,7 +79,8 @@ $$('.lang button').forEach(b => b.addEventListener('click', () => { lang = b.dat
 
 // ---------------------------------------------------------------- helpers
 const gel = n => `${n}<span class="gel"> ₾</span>`;
-const img = (id, size) => `${ASSET}shoes/${id}-${size}.webp`;
+const SHOE_V = Object.fromEntries(pairs.map(p => [p.id, p.v]));
+const img = (id, size) => `${ASSET}shoes/${id}-${size}.webp${SHOE_V[id] ? `?v=${SHOE_V[id]}` : ''}`;
 const photo = (n, thumb) => `${ASSET}photos/${n}${thumb ? '-t' : ''}.webp`;
 function loadImage(src) {
   return new Promise((res, rej) => { const i = new Image(); i.decoding = 'async'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
@@ -433,13 +433,11 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const capture = params.has('capture');
   const saveData = navigator.connection && navigator.connection.saveData;
-  let seen = false; try { seen = sessionStorage.getItem('ui.reel') === '1'; sessionStorage.setItem('ui.reel', '1'); } catch (e) {}
-  const deep = /^#\/p\//.test(location.hash);
   const reelEl = $('#reel');
   let reel = null;
   if (!(window.AudioContext || window.webkitAudioContext)) soundBtn.hidden = true;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, reduced: false, short: !forceReel && (seen || deep || params.has('short')), anchorIndex: ANCHOR, pairs });
+    reel = createReel({ root: reelEl, lang, phone, reduced: false, short: params.has('short'), anchorIndex: ANCHOR, pairs });
     reelCopy = reel.copy; liveReel = reel;
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());
@@ -461,17 +459,6 @@ async function boot() {
       sound.reel(reel.timeline(), start);
     });
   } else reelEl?.remove();
-  // first visit: the closed box. Opening it is the click that lets the sound play.
-  const gateP = reel && !seen && !deep && !capture && !params.has('nogate')
-    ? reel.gate({ onOpen: withSound => (withSound ? soundOn() : (soundOff(), null)) })
-    : null;
-  // a returning visitor who left sound on (and isn't at the box, which asks): resume on their first click
-  if (!gateP && store.get('sound', false)) {
-    setSoundUI(false);
-    const resume = () => { removeEventListener('pointerdown', resume, true); removeEventListener('keydown', resume, true); if (!sound.on) soundOn(); };
-    addEventListener('pointerdown', resume, true); addEventListener('keydown', resume, true);
-  }
-
   // what the reel needs first: the pair it is built around
   let loaded = 0; const total = pairs.length + 4;
   const tickLoad = () => reel && reel.progress(++loaded / total * 100);
@@ -483,6 +470,26 @@ async function boot() {
   }
   const bitmaps = [];
   const lo = Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 512)).then(b => { bitmaps[i] = b; reel?.set('pair', b, i); scene?.setShoeImage(i, b, false); tickLoad(); })));
+
+  // The box. Browsers only let a page start sound after a click, and opening the box is that click.
+  // Phones and tablets ask every visit. On a computer the box shows until it has been opened once; after
+  // that the loader starts by itself, with sound if they chose it and the browser lets the page start it
+  // (Chrome and Edge do on a reload after a click on the site). When it doesn't, the box asks again.
+  const touch = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  let showBox = !!reel && !capture && !params.has('nogate');
+  if (showBox && !touch && store.get('opened', false)) {
+    if (!store.get('sound', false)) showBox = false;
+    else if (await sound.tryStart()) { setSoundUI(true); showBox = false; }
+  }
+  const gateP = showBox
+    ? reel.gate({ onOpen: withSound => { store.set('opened', true); return withSound ? soundOn() : (soundOff(), null); } })
+    : null;
+  // sound left on but not allowed to start yet (and no box to ask): start on their first click
+  if (!gateP && !sound.on && store.get('sound', false)) {
+    setSoundUI(false);
+    const resume = () => { removeEventListener('pointerdown', resume, true); removeEventListener('keydown', resume, true); if (!sound.on) soundOn(); };
+    addEventListener('pointerdown', resume, true); addEventListener('keydown', resume, true);
+  }
 
   // let the first frame paint before the GPU work starts (a background tab gets no frames: don't wait for one)
   await Promise.race([new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))), sleep(150)]);
@@ -519,9 +526,9 @@ async function boot() {
       reel, scene,
       land: () => { scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land(); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); },
       // the score for the preview video, as base64 WAV
-      score: async ({ boxAt, reelAt, landAt }) => {
+      score: async ({ boxAt, openDur, reelAt, landAt }) => {
         const sweep = pairs.map((_, k) => 0.55 + k * 0.065);
-        const { wav, peak } = await renderScore({ timeline: reel.timeline(), boxAt, reelAt, landAt, sweep });
+        const { wav, peak } = await renderScore({ timeline: reel.timeline(), boxAt, openDur, reelAt, landAt, sweep });
         let bin = ''; for (let i = 0; i < wav.length; i += 0x8000) bin += String.fromCharCode.apply(null, wav.subarray(i, i + 0x8000));
         return { b64: btoa(bin), peak };
       },
@@ -531,11 +538,14 @@ async function boot() {
   }
   // the reel starts once its pair is decoded (or after a short wait on a slow line)
   if (reel) {
+    let beat = null;  // audio time the reel's first beat should land on
     if (gateP) {
       const choice = await gateP;
       if (choice.ready) await choice.ready;
-      sound.ui('box');
-      // the lid comes off while the last of the loading finishes
+      // the lid comes off and the pair rises out of the box while the last of the loading finishes;
+      // the opening's sound swells into the reel's first beat
+      const tOpen = sound.open(reel.openMs / 1000);
+      if (tOpen != null) beat = tOpen + reel.openMs / 1000;
       await Promise.all([reel.openBox(), Promise.race([anchorP, sleep(1600)]), Promise.race([warmed, sleep(1400)])]);
     } else {
       await Promise.race([anchorP, sleep(1600)]);
@@ -545,7 +555,10 @@ async function boot() {
       await Promise.race([warmed, sleep(1400)]);
     }
     const run = reel.play();
-    if (sound.on) { const start = sound.now() + 0.1; reel.restart(start * 1000, () => sound.now() * 1000); sound.reel(reel.timeline(), start); }
+    if (sound.on) {
+      const start = beat != null ? Math.max(sound.now() + 0.02, beat) : sound.now() + 0.1;
+      reel.restart(start * 1000, () => sound.now() * 1000); sound.reel(reel.timeline(), start);
+    }
     await run;
     if (sceneOk === null) { reel.hold(); await Promise.race([sceneReady.catch(() => {}), sleep(6000)]); }
     // "Sound on" near the end restarts the reel: let that run play out

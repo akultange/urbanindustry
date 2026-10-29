@@ -68,8 +68,10 @@ html[lang='ka'] .r-skip, html[lang='ka'] .r-sound { font: 500 11.5px/1 var(--ka)
 .reel.gate .r-gate { display: flex; animation: gate-in 600ms var(--ease) both; }
 .reel.opening .r-gate { display: flex; opacity: 0; transform: translateY(8px); transition: opacity 200ms linear, transform 300ms var(--ease); }
 @keyframes gate-in { from { opacity: 0; transform: translateY(10px); } }
+/* the reel's controls stay out of the way until the cuts start, then fade in */
+.r-cap, .r-pct, .r-skip, .r-sound { transition: opacity 360ms linear 80ms; }
 .reel.gate .r-cap, .reel.gate .r-pct, .reel.gate .r-skip, .reel.gate .r-sound,
-.reel.opening .r-cap, .reel.opening .r-pct, .reel.opening .r-skip, .reel.opening .r-sound { visibility: hidden; }
+.reel.opening .r-cap, .reel.opening .r-pct, .reel.opening .r-skip, .reel.opening .r-sound { opacity: 0; pointer-events: none; transition: none; }
 .r-q { font: 500 clamp(26px, 3.2vw, 44px)/1.05 var(--sans); letter-spacing: -.025em; }
 html[lang='ka'] .r-q { font: 600 clamp(24px, 2.9vw, 40px)/1.15 var(--ka); font-variation-settings: "wdth" 86; letter-spacing: 0; }
 .r-open { display: inline-flex; align-items: center; gap: 12px; margin-top: 6px; height: 50px; padding: 0 24px 0 20px; border-radius: 99px; background: #0e0f12; color: #fff;

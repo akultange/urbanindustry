@@ -91,12 +91,19 @@ def main():
     css = open(os.path.join(SRC, 'style.css')).read().replace('%FONTS%', font_css)
     css = subprocess.run([os.path.join(NM, '.bin', 'esbuild'), '--loader=css', '--minify'], input=css, capture_output=True, text=True, check=True).stdout
     cat = json.load(open(os.path.join(SRC, 'catalog.json')))
+    # a content hash per pair, so a re-cut picture never comes out of an old cache
+    import hashlib
+    for p in cat['pairs']:
+        h = hashlib.sha1()
+        for size in (512, 1024):
+            with open(os.path.join(ROOT, 'assets', 'shoes', f'{p["id"]}-{size}.webp'), 'rb') as f: h.update(f.read())
+        p['v'] = h.hexdigest()[:8]
     html = open(os.path.join(SRC, 'index.html')).read()
     # everything here is read with fetch() + createImageBitmap, so preload as fetch (not image)
     pre = lambda href, hi=False: f'<link rel="preload" href="{href}" as="fetch" crossorigin{" fetchpriority=" + chr(34) + "high" + chr(34) if hi else ""}>'
     anchor = next(p for p in cat['pairs'] if p['id'] == 'dunk')
-    shoes = [pre(f'assets/shoes/{anchor["id"]}-1024.webp', True)]
-    shoes += [pre(f'assets/shoes/{p["id"]}-512.webp') for p in cat['pairs']]
+    shoes = [pre(f'assets/shoes/{anchor["id"]}-1024.webp?v={anchor["v"]}', True)]
+    shoes += [pre(f'assets/shoes/{p["id"]}-512.webp?v={p["v"]}') for p in cat['pairs']]
     shoes += [pre(f'assets/reel/{n}.webp') for n in ('dunk-lines', 'held', 'box')]
     logo_svg, fav = logo()
     og = (PUBLIC.rstrip('/') + '/' if PUBLIC else '') + 'assets/img/og.jpg'

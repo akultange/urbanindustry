@@ -156,6 +156,24 @@ export function createEngine(ctx) {
     });
   }
 
+  // ---- the box opening (reel.js OPEN_MS, 1.3 s): a press, the lid letting go, cardboard and air as it
+  // lifts away, tissue paper, then a shimmer that swells into the reel's first beat
+  function open(t, dur = 1.3) {
+    const b = bus(out, 0.16);
+    tone(b, t, { f: 96, to: 58, glide: 0.09, gain: 0.3, dec: 0.12 });                                   // the press
+    noiseHit(b, t, { type: 'lowpass', f: 420, gain: 0.16, dec: 0.05 });
+    tone(b, t + 0.1, { f: 250, to: 115, glide: 0.045, gain: 0.2, dec: 0.065 });                          // suction pop
+    noiseHit(b, t + 0.1, { type: 'bandpass', f: 1500, q: 1.6, gain: 0.08, dec: 0.018 });
+    noiseHit(b, t + 0.07, { type: 'bandpass', f: 360, sweepTo: 1100, q: 1.2, a: 0.12, gain: 0.11, dec: 0.16 });   // cardboard
+    noiseHit(b, t + 0.27, { type: 'bandpass', f: 700, sweepTo: 3600, q: 0.8, a: 0.2, gain: 0.1, dec: 0.22, pan: -0.15 }); // the lid away
+    [0.31, 0.38, 0.45, 0.53, 0.62].forEach((dt, k) =>                                                     // tissue paper
+      noiseHit(b, t + dt, { type: 'highpass', f: 3600 + k * 320, a: 0.006, gain: 0.028 + 0.012 * (k % 2), dec: 0.035, pan: k % 2 ? 0.25 : -0.25 }));
+    noiseHit(b, t + 0.32, { type: 'bandpass', f: 900, sweepTo: 7600, q: 1.4, a: dur - 0.36, gain: 0.07, dec: 0.03 }); // the light
+    tone(b, t + 0.3, { f: 349.23, to: 698.46, glide: dur - 0.32, a: dur - 0.34, gain: 0.032, dec: 0.04 });
+    tone(b, t + 0.3, { type: 'triangle', f: 174.61, to: 349.23, glide: dur - 0.32, a: dur - 0.34, gain: 0.03, dec: 0.04 });
+    [[0.58, 1046.5], [0.77, 1244.51], [0.93, 1396.91], [1.07, 1661.22]].forEach(([dt, f]) => bell(b, t + dt, f, 0.02));
+  }
+
   // ---- interface
   const UI = {
     hover(t) { tone(out, t, { f: 480, to: 760, glide: 0.07, gain: 0.06, dec: 0.11 }); noiseHit(out, t, { type: 'bandpass', f: 3000, q: 2, gain: 0.025, dec: 0.006 }); },
@@ -165,16 +183,8 @@ export function createEngine(ctx) {
     bag(t) { bell(out, t, 1046.5, 0.05); bell(out, t + 0.085, 1568, 0.05); },
     order(t) { bell(out, t, 1046.5, 0.045); bell(out, t + 0.07, 1318.5, 0.045); bell(out, t + 0.14, 1568, 0.05); },
     step(t) { tone(out, t, { f: 900, gain: 0.03, dec: 0.02, a: 0.001 }); },
-    // the lid coming off: cardboard friction, a soft pop, light pouring out, a swell into the first cut
-    box(t) {
-      noiseHit(out, t, { type: 'bandpass', f: 320, sweepTo: 1400, q: 0.9, a: 0.08, gain: 0.26, dec: 0.22 });
-      tone(out, t + 0.11, { f: 120, to: 62, glide: 0.12, gain: 0.5, dec: 0.2 });
-      noiseHit(out, t + 0.11, { type: 'lowpass', f: 1800, gain: 0.24, dec: 0.08 });
-      [698.46, 1046.5, 1396.91, 2093].forEach((f, k) => bell(out, t + 0.16 + k * 0.05, f, 0.05));
-      noiseHit(out, t + 0.12, { type: 'highpass', f: 2400, a: 0.42, gain: 0.11, dec: 0.015 });
-    },
   };
-  return { out, reel, land, ui: (name, t) => UI[name] && UI[name](t) };
+  return { out, reel, land, open, ui: (name, t) => UI[name] && UI[name](t) };
 }
 
 // the live engine: created on the first click that asks for sound
@@ -200,6 +210,22 @@ export function createSound() {
       else session('auto');
       return on;
     },
+    // without a click: start only if the browser allows it right now (Chrome and Edge do on a reload after
+    // a click on the site). Doesn't wait for a gesture: if it's not running within a moment, it's blocked.
+    async tryStart(wait = 260) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      try { if (navigator.getAutoplayPolicy && navigator.getAutoplayPolicy('audiocontext') === 'disallowed') return false; } catch (e) {}
+      if (!ctx) { ctx = new AC({ latencyHint: 'interactive' }); eng = createEngine(ctx); }
+      if (ctx.state !== 'running') {
+        ctx.resume().catch(() => {});
+        const t0 = performance.now();
+        while (ctx.state !== 'running' && performance.now() - t0 < wait) await new Promise(r => setTimeout(r, 20));
+      }
+      on = ctx.state === 'running';
+      if (on) { eng.out.gain.cancelScheduledValues(ctx.currentTime); eng.out.gain.setValueAtTime(0.38, ctx.currentTime); }
+      return on;
+    },
     disable() {
       on = false;
       if (!ctx) return;
@@ -220,18 +246,20 @@ export function createSound() {
     },
     stopReel() { if (reelBus && ctx) { reelBus.gain.setTargetAtTime(0, ctx.currentTime, 0.015); reelBus = null; } },
     land(sweep) { if (on) { api.stopReel(); eng.land(ctx.currentTime + 0.005, sweep); } },
+    // the box opening; returns the audio time it started at (the reel's first beat goes at that + its length)
+    open(dur) { if (!on) return null; const t = ctx.currentTime + 0.005; eng.open(t, dur); return t; },
     ui(name) { if (on && ctx.state === 'running') eng.ui(name, ctx.currentTime + 0.004); },
   };
   return api;
 }
 
 // for the preview video: the same score rendered offline, returned as a 16-bit WAV (times in s)
-export async function renderScore({ timeline, boxAt = -1, reelAt = 0, landAt, sweep = [], tail = 4.2, sr = 48000 }) {
+export async function renderScore({ timeline, boxAt = -1, openDur = 1.3, reelAt = 0, landAt, sweep = [], tail = 4.2, sr = 48000 }) {
   const last = timeline[timeline.length - 1];
   const len = Math.ceil((landAt + tail) * sr);
   const oc = new OfflineAudioContext(2, len, sr);
   const eng = createEngine(oc);
-  if (boxAt >= 0) eng.ui('box', boxAt);
+  if (boxAt >= 0) eng.open(boxAt, openDur);
   const cuts = timeline.map(c => ({ t: reelAt + c.t / 1000, d: c.d / 1000, shot: c.shot, neg: !!c.neg }));
   eng.reel(cuts, reelAt + (last.t + last.d) / 1000);
   eng.land(landAt, sweep);

@@ -1,5 +1,6 @@
 // Real-time checks of the loader hand-off: normal, skip, reduced motion, repeat visit, deep link, no WebGL.
-// A first visit opens on the box, which waits for a tap: these press Enter to open it (tools/gate.js tests the box itself).
+// A first visit opens on the box, which waits for a tap: these press Enter to open it (tools/gate.js tests the box,
+// tools/visits.js when it shows).
 // usage: node tools/live.js <url> <outdir>
 const puppeteer = require('puppeteer-core');
 const m = require('@sparticuz/chromium'); const chromium = m.default || m;
@@ -18,6 +19,8 @@ fs.mkdirSync(out, { recursive: true });
     p.on('console', msg => { if (['error', 'warning'].includes(msg.type())) logs.push(`[${name}] ${msg.type()}: ${msg.text()}`); });
     p.on('pageerror', e => logs.push(`[${name}] pageerror: ${e.message}`));
     await p.setViewport({ width: 1440, height: 900 });
+    // each run starts as a first visit (the box); a reload in the same tab is a returning visitor
+    await p.evaluateOnNewDocument(() => { if (!sessionStorage.getItem('qa')) { localStorage.clear(); sessionStorage.setItem('qa', '1'); } });
     if (opts.reduced) await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
     if (opts.nogl) await p.evaluateOnNewDocument(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return t === 'webgl2' ? null : g.call(this, t, ...a); }; });
     return { p, ctx };
@@ -40,11 +43,15 @@ fs.mkdirSync(out, { recursive: true });
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
     logs.push(`[normal] reel gone after ${Date.now() - t0} ms ` + JSON.stringify(await state(p)));
     await sleep(2500); await p.screenshot({ path: `${out}/n-end.png` });
-    // 2. repeat visit in the same session: the short version
+    // 2. reload: no box this time, the loader runs straight away (with sound where the browser allows it)
     const t1 = Date.now();
     await p.reload({ waitUntil: 'domcontentloaded' });
+    await sleep(600);
+    const rs = await p.evaluate(() => ({ box: !!document.querySelector('#reel.gate'), sound: document.querySelector('#sound-btn').getAttribute('aria-pressed') }));
+    // where the browser won't start sound without a click, the box asks again
+    if (rs.box) await p.keyboard.press('Enter');
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
-    logs.push(`[repeat] reel gone after ${Date.now() - t1} ms`);
+    logs.push(`[repeat] ${rs.box ? 'BOX' : 'no box'}, sound ${rs.sound}; reel gone after ${Date.now() - t1} ms`);
     await ctx.close();
   }
   // 3. skip
@@ -76,6 +83,7 @@ fs.mkdirSync(out, { recursive: true });
   {
     const { p, ctx } = await page('deep');
     await p.goto(url + '?lang=en#/p/veja', { waitUntil: 'domcontentloaded' });
+    await openBox(p, 'deep');
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
     await sleep(4000); await p.screenshot({ path: `${out}/d-end.png` });
     logs.push('[deep] ' + JSON.stringify(await state(p)));
