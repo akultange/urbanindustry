@@ -447,4 +447,4 @@ html.draft body::before {
   padding: 7px 14px; border-radius: 99px; background: rgba(162, 193, 240, .16); border: 1px solid rgba(162, 193, 240, .4);
   color: var(--accent-2); font: 500 12px/1 var(--sans); letter-spacing: .02em; white-space: nowrap; pointer-events: none;
 }
-html.draft[lang='ka'] body::before { content: 'გადახედვა · ჯერ არ გამოქვეყნებულა'; font-family: var(--ka); }
+html.draft[lang='ka'] body::before { content: 'წინასწარი ნახვა · ჯერ არ გამოქვეყნებულა'; font-family: var(--ka); }

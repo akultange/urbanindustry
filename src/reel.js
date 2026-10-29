@@ -23,11 +23,12 @@ const COPY = {
     gateQ: 'What’s in the box?', gateOpen: 'Open it, sound on', gateMute: 'or open without sound',
   },
   ka: {
-    loc: 'თბილისი — მთელ მსოფლიოში', loading: 'იტვირთება', ready: 'მზადაა', skip: 'გამოტოვება', soundOn: 'ხმის ჩართვა', soundOff: 'ხმის გამორთვა',
-    field: 'Nike Dunk Low', night: 'კედელი', day: 'კედელი', blueprint: 'გვერდხედი — EU 36–45', beam: 'აანთე',
-    silhouette: 'კლასიკა', held: 'ჩვენი გვერდიდან', halftone: '144 ათასი Instagram-ზე', price: 'მარაგშია',
-    swatch: 'ფერები', box: 'ვაგზავნით მსოფლიოში',
-    gateQ: 'რა არის ყუთში?', gateOpen: 'გახსენი ხმით', gateMute: 'ან გახსენი ხმის გარეშე',
+    // the film's titles stay in English (a fashion film's captions; translated they read stiff); the controls are Georgian
+    loc: 'TBILISI — WORLDWIDE', loading: 'იტვირთება', ready: 'მზადაა', skip: 'გამოტოვება', soundOn: 'ხმის ჩართვა', soundOff: 'ხმის გამორთვა',
+    field: 'Nike Dunk Low', night: 'The wall', day: 'The wall', blueprint: 'Side view — EU 36–45', beam: 'Light it up',
+    silhouette: 'A classic', held: 'From our feed', halftone: '144K on Instagram', price: 'In stock',
+    swatch: 'Colourways', box: 'Ships worldwide',
+    gateQ: 'What’s in the box?', gateOpen: 'გახსენით ხმით', gateMute: 'ან გახსენით ხმის გარეშე',
   },
 };
 

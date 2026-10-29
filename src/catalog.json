@@ -5,11 +5,11 @@
    "brand": "Philippe Model Paris",
    "model": "PRSX",
    "color": {
-    "ka": "თეთრი / ვერცხლისფერი",
+    "ka": "White / Silver",
     "en": "White / Silver"
    },
    "desc": {
-    "ka": "პარიზული კორტის ფეხსაცმელი — ვინტაჟური ძირი და ვერცხლისფერი გერბი.",
+    "ka": "Paris court shoe with a pre-aged sole and a silver crest.",
     "en": "Paris court shoe with a pre-aged sole and a silver crest."
    },
    "price": 289,
@@ -59,11 +59,11 @@
    "brand": "Golden Goose",
    "model": "Ball Star",
    "color": {
-    "ka": "მუქი ლურჯი ბრჭყვიალა / თეთრი ვარსკვლავი",
+    "ka": "Navy glitter / White star",
     "en": "Navy glitter / White star"
    },
    "desc": {
-    "ka": "ბრჭყვიალა ზედაპირი, ტყავის ვარსკვლავი, ხელით დაძველებული ძირი.",
+    "ka": "Navy glitter, a leather star and a hand-aged sole.",
     "en": "Navy glitter, a leather star and a hand-aged sole."
    },
    "price": 299,
@@ -100,11 +100,11 @@
    "brand": "Nike",
    "model": "Dunk Low",
    "color": {
-    "ka": "მუქი წითელი / თეთრი",
+    "ka": "Team Red / White",
     "en": "Team Red / White"
    },
    "desc": {
-    "ka": "85-ის საკალათბურთო კლასიკა, ორფეროვან ტყავში.",
+    "ka": "The ’85 basketball classic in two-tone leather.",
     "en": "The ’85 basketball classic in two-tone leather."
    },
    "price": 219,
@@ -149,11 +149,11 @@
    "brand": "Salomon",
    "model": "XT-6",
    "color": {
-    "ka": "თეთრი / ქლიავისფერი",
+    "ka": "White / Plum",
     "en": "White / Plum"
    },
    "desc": {
-    "ka": "ულტრა მარათონისთვის შექმნილი, ქალაქში სატარებელი.",
+    "ka": "Built for ultra trails, worn on city streets.",
     "en": "Built for ultra trails, worn on city streets."
    },
    "price": 259,
@@ -207,11 +207,11 @@
    "brand": "adidas",
    "model": "Gazelle Indoor",
    "color": {
-    "ka": "ვარდისფერი / კაუჩუკის ძირი",
+    "ka": "Sandy Pink / Gum",
     "en": "Sandy Pink / Gum"
    },
    "desc": {
-    "ka": "ვარდისფერი ზამში, გამჭვირვალე კაუჩუკის ძირზე.",
+    "ka": "Pink suede on a translucent gum sole.",
     "en": "Pink suede on a translucent gum sole."
    },
    "price": 199,
@@ -251,11 +251,11 @@
    "brand": "Miu Miu × New Balance",
    "model": "530 SL",
    "color": {
-    "ka": "ყავისფერი ზამში",
+    "ka": "Cognac suede",
     "en": "Cognac suede"
    },
    "desc": {
-    "ka": "Miu Miu-ს 530: ზამში, ბადე და გრძელი თასმები.",
+    "ka": "Miu Miu’s take on the 530: suede, mesh, long laces.",
     "en": "Miu Miu’s take on the 530: suede, mesh, long laces."
    },
    "price": 329,
@@ -298,11 +298,11 @@
    "brand": "VEJA",
    "model": "V-90",
    "color": {
-    "ka": "თეთრი / შავი",
+    "ka": "Extra White / Black",
     "en": "Extra White / Black"
    },
    "desc": {
-    "ka": "სუფთა ტყავი, ზამშის V და ნატურალური კაუჩუკი.",
+    "ka": "Clean leather, a suede V, natural rubber.",
     "en": "Clean leather, a suede V, natural rubber."
    },
    "price": 229,
@@ -347,11 +347,11 @@
    "brand": "adidas",
    "model": "Superstar",
    "color": {
-    "ka": "კრემისფერი / ყავისფერი",
+    "ka": "Cream / Brown",
     "en": "Cream / Brown"
    },
    "desc": {
-    "ka": "ნიჟარისებრი ცხვირი, კრემისფერი ტყავი, ყავისფერი ზოლები.",
+    "ka": "Shell toe, cream leather, brown suede stripes.",
     "en": "Shell toe, cream leather, brown suede stripes."
    },
    "price": 179,
@@ -390,11 +390,11 @@
    "brand": "Onitsuka Tiger",
    "model": "Mexico 66 SD",
    "color": {
-    "ka": "კრემისფერი / ნაცრისფერი",
+    "ka": "Birch / Metropolis",
     "en": "Birch / Metropolis"
    },
    "desc": {
-    "ka": "1966 წლის თხელი სილუეტი, რბილ ძირზე.",
+    "ka": "The slim 1966 runner on a cushioned sole.",
     "en": "The slim 1966 runner on a cushioned sole."
    },
    "price": 219,
@@ -433,11 +433,11 @@
    "brand": "Miu Miu × New Balance",
    "model": "530 SL",
    "color": {
-    "ka": "კრემისფერი ზამში",
+    "ka": "Cream suede",
     "en": "Cream suede"
    },
    "desc": {
-    "ka": "530 SL კრემისფერ ზამშსა და ბადეში.",
+    "ka": "The 530 SL in cream suede and mesh.",
     "en": "The 530 SL in cream suede and mesh."
    },
    "price": 329,

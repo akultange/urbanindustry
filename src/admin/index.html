@@ -11,10 +11,10 @@
 </head>
 <body>
 <header class="bar">
-  <a class="brand" href="../" title="Urban Industry">%LOGO%<span class="tag" data-t="admin">მართვა</span></a>
+  <a class="brand" href="../" title="Urban Industry">%LOGO%<span class="tag" data-t="admin">ადმინ-პანელი</span></a>
   <div class="bar-r">
     <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ka">KA</button><button type="button" data-lang="en">EN</button></div>
-    <a class="ghost" href="../" target="_blank" rel="noopener" data-t="openSite">საიტი ↗</a>
+    <a class="ghost" href="../" target="_blank" rel="noopener" data-t="openSite">საიტის ნახვა ↗</a>
   </div>
 </header>
 
@@ -23,25 +23,25 @@
 
   <section class="block">
     <div class="block-h">
-      <div><h1 data-t="onWall">კედელზე</h1><p class="sub" id="wall-sub"></p></div>
-      <button type="button" class="btn primary" id="add" data-t="add">+ ახალი წყვილი</button>
+      <div><h1 data-t="onWall">საიტზე</h1><p class="sub" id="wall-sub"></p></div>
+      <button type="button" class="btn primary" id="add" data-t="add">+ წყვილის დამატება</button>
     </div>
     <ol class="grid" id="wall" aria-live="polite"></ol>
   </section>
 
   <section class="block">
     <div class="block-h">
-      <div><h2 data-t="offWall">კედლის გარეთ</h2><p class="sub" data-t="offWallSub">აქ ელოდებიან, საიტზე არ ჩანან.</p></div>
+      <div><h2 data-t="offWall">დამალული</h2><p class="sub" data-t="offWallSub">ეს წყვილები საიტზე არ ჩანს — ნებისმიერ დროს შეგიძლიათ დააბრუნოთ.</p></div>
     </div>
     <ol class="grid" id="archive"></ol>
-    <p class="empty" id="archive-empty" data-t="archiveEmpty">ცარიელია.</p>
+    <p class="empty" id="archive-empty" data-t="archiveEmpty">დამალული წყვილები არ არის.</p>
   </section>
 </main>
 
 <footer class="dock" id="dock">
   <p class="dock-note" id="dock-note"></p>
   <div class="dock-act">
-    <button type="button" class="btn" id="preview" data-t="preview">ნახე კედელზე</button>
+    <button type="button" class="btn" id="preview" data-t="preview">წინასწარი ნახვა</button>
     <button type="button" class="btn primary" id="publish" data-t="publish">გამოქვეყნება</button>
   </div>
 </footer>
@@ -59,18 +59,18 @@
           <div class="slats"></div>
           <img id="stage-img" alt="">
           <div class="shelf"></div>
-          <div class="stage-empty" id="stage-empty"><b data-t="photoTitle">ფოტო</b><span data-t="photoHint">ერთი ფეხსაცმელი გვერდიდან, მშვიდ ფონზე — ფონი თავისით მოშორდება.</span></div>
+          <div class="stage-empty" id="stage-empty"><b data-t="photoTitle">ფოტო</b><span data-t="photoHint">ატვირთეთ ერთი ფეხსაცმლის ფოტო გვერდიდან — ფონი ავტომატურად მოშორდება. ფოტოზე ხელი ან ფეხი არ უნდა ჩანდეს.</span></div>
           <div class="stage-busy" id="stage-busy" hidden><i></i><span id="busy-text"></span></div>
         </div>
         <div class="pic-act">
-          <label class="btn" for="photo"><span data-t="choose">ფოტოს არჩევა</span></label>
+          <label class="btn" for="photo"><span data-t="choose">ფოტოს ატვირთვა</span></label>
           <input type="file" id="photo" accept="image/*" hidden>
-          <button type="button" class="btn ghost" id="flip" data-t="flip">სარკე</button>
+          <button type="button" class="btn ghost" id="flip" data-t="flip">შებრუნება ↔</button>
         </div>
         <div class="pic-tune" id="pic-tune" hidden>
-          <label><span data-t="straighten">გასწორება</span><input type="range" id="rotate" min="-10" max="10" step="0.5" value="0"></label>
-          <label><span data-t="edge">კიდე</span><input type="range" id="tol" min="0.6" max="1.6" step="0.05" value="1"></label>
-          <label class="check"><input type="checkbox" id="keep-bg"><span data-t="keepBg">ფონი არ მოშორდეს (უკვე ამოჭრილია)</span></label>
+          <label><span data-t="straighten">დახრა</span><input type="range" id="rotate" min="-10" max="10" step="0.5" value="0"></label>
+          <label><span data-t="edge">კონტური</span><input type="range" id="tol" min="0.6" max="1.6" step="0.05" value="1"></label>
+          <label class="check"><input type="checkbox" id="keep-bg"><span data-t="keepBg">ფონი უკვე მოშორებულია</span></label>
           <p class="note" id="pic-note"></p>
         </div>
       </div>
@@ -81,20 +81,20 @@
           <label><span data-t="model">მოდელი</span><input id="f-model" autocomplete="off" placeholder="Dunk Low"></label>
         </div>
         <div class="row2">
-          <label><span data-t="colorKa">ფერი (ქართ.)</span><input id="f-color-ka" autocomplete="off" placeholder="წითელი / თეთრი"></label>
-          <label><span data-t="colorEn">ფერი (ინგლ.)</span><input id="f-color-en" autocomplete="off" placeholder="Red / White"></label>
+          <label><span data-t="colorKa">ფერი (ქართულად)</span><input id="f-color-ka" autocomplete="off" placeholder="წითელი / თეთრი"></label>
+          <label><span data-t="colorEn">ფერი (ინგლისურად)</span><input id="f-color-en" autocomplete="off" placeholder="Red / White"></label>
         </div>
         <label class="price"><span data-t="price">ფასი</span><span class="price-in"><input id="f-price" inputmode="numeric" autocomplete="off" placeholder="249"><i>₾</i></span></label>
 
         <div class="sizes-h"><span data-t="sizes">ზომები (EU)</span><span class="legend"><i class="on"></i><span data-t="inStock">მარაგშია</span><i class="out"></i><span data-t="soldOut">ამოიწურა</span></span></div>
         <div class="sizes" id="f-sizes"></div>
-        <p class="note" data-t="sizesHint">შეეხე ზომას: არ გვაქვს → მარაგშია → ამოიწურა.</p>
+        <p class="note" data-t="sizesHint">ერთხელ დააჭირეთ — მარაგშია, ორჯერ — ამოიწურა, სამჯერ — ზომა მოიხსნება.</p>
 
         <details class="more">
           <summary data-t="more">აღწერა და ფოტოები</summary>
-          <label><span data-t="descKa">აღწერა (ქართ.)</span><textarea id="f-desc-ka" rows="2"></textarea></label>
-          <label><span data-t="descEn">აღწერა (ინგლ.)</span><textarea id="f-desc-en" rows="2"></textarea></label>
-          <div class="feed-h"><span data-t="feed">ჩვენი გვერდიდან</span></div>
+          <label><span data-t="descKa">აღწერა (ქართულად)</span><textarea id="f-desc-ka" rows="2"></textarea></label>
+          <label><span data-t="descEn">აღწერა (ინგლისურად)</span><textarea id="f-desc-en" rows="2"></textarea></label>
+          <div class="feed-h"><span data-t="feed">ფოტოები Instagram-იდან</span></div>
           <div class="feed" id="f-feed"></div>
           <input type="file" id="feed-photo" accept="image/*" hidden>
         </details>
@@ -115,10 +115,10 @@
 <div class="sheet" id="signin" role="dialog" aria-modal="true" aria-labelledby="si-title" hidden>
   <div class="sheet-in narrow">
     <div class="sheet-h"><h2 id="si-title" data-t="signIn">შესვლა</h2><button type="button" class="x" data-close aria-label="Close">×</button></div>
-    <p class="lead" data-t="signInLead">გამოქვეყნება ხდება GitHub-ზე, სადაც საიტი ცხოვრობს. საჭიროა გასაღები (token), ერთხელ.</p>
+    <p class="lead" data-t="signInLead">საიტი GitHub-ზეა განთავსებული და ცვლილებებიც იქ ქვეყნდება. ამისთვის ერთხელ დაგჭირდებათ ტოკენი — ის მხოლოდ ამ ბრაუზერში შეინახება.</p>
     <ol class="steps" id="si-steps"></ol>
-    <label><span data-t="key">გასაღები</span><input id="si-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
-    <details class="more"><summary data-t="repoAdv">საცავი</summary>
+    <label><span data-t="key">ტოკენი</span><input id="si-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <details class="more"><summary data-t="repoAdv">რეპოზიტორი</summary>
       <label><span>owner / repo</span><input id="si-repo" autocomplete="off" spellcheck="false"></label>
     </details>
     <p class="err" id="si-err" role="alert"></p>
