@@ -57,7 +57,7 @@ const SWATCHES = [
   ['Birch', 'Mexico 66', '#d9d1be'], ['Cognac', '530 SL', '#a0714f'],
 ];
 
-export function createReel({ root, lang = 'ka', phone = false, isPhone = null, reduced = false, short = false, anchorIndex, pairs }) {
+export function createReel({ root, lang = 'ka', phone = false, isPhone = null, reduced = false, short = false, film = false, anchorIndex, pairs }) {
   const canvas = root.querySelector('canvas');
   let g = canvas.getContext('2d', { alpha: false });
   const hud = Object.fromEntries([...root.querySelectorAll('[data-hud]')].map(el => [el.dataset.hud, el]));
@@ -72,7 +72,7 @@ export function createReel({ root, lang = 'ka', phone = false, isPhone = null, r
 
   // ---------------------------------------------------------------- geometry: the pair's texture layer, centred on screen
   function measure() {
-    W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, film ? 4 : 2);   // a film: full resolution
     if (isPhone) phone = isPhone();   // the layout follows the window (it can change before the cuts start)
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     const r = pairs[anchorIndex].rect || [0.04, 0.06, 0.96, 0.99];

@@ -438,7 +438,7 @@ async function boot() {
   let reel = null;
   if (!(window.AudioContext || window.webkitAudioContext)) soundBtn.hidden = true;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, isPhone: () => phoneQ.matches, reduced: false, short: params.has('short'), anchorIndex: ANCHOR, pairs });
+    reel = createReel({ root: reelEl, lang, phone, isPhone: () => phoneQ.matches, reduced: false, short: params.has('short'), film: capture, anchorIndex: ANCHOR, pairs });
     reelCopy = reel.copy; liveReel = reel;
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());

@@ -401,9 +401,10 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
 
   function resize() {
     const r = canvas.getBoundingClientRect();
-    const cap = tier === 'high' ? 2 : tier === 'mid' ? 1.6 : 0.7;
+    // a film renders every pixel it's filmed at (4K, a 3x phone); a visitor's screen is capped to keep it smooth
+    const cap = film ? 4 : tier === 'high' ? 2 : tier === 'mid' ? 1.6 : 0.7;
     let dpr = Math.min(window.devicePixelRatio || 1, cap) * (state.scale || 1);
-    const maxPx = tier === 'high' ? 4.2e6 : 2.6e6;
+    const maxPx = film ? 1.6e7 : tier === 'high' ? 4.2e6 : 2.6e6;
     if (r.width * r.height * dpr * dpr > maxPx) dpr = Math.sqrt(maxPx / (r.width * r.height));
     const W = Math.max(2, Math.round(r.width * dpr)), H = Math.max(2, Math.round(r.height * dpr));
     state.w = r.width; state.h = r.height; state.dpr = dpr; state.aspect = r.width / r.height;
