@@ -8,7 +8,9 @@ const catalog = JSON.parse($('#catalog').textContent);
 const pairs = catalog.pairs;
 const ASSET = window.__ASSET_BASE || 'assets/';
 const IG = 'https://ig.me/m/urbanindustry_';
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// ?reel always plays the full loader (for demos on machines with animations turned off)
+const forceReel = new URLSearchParams(location.search).has('reel');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches && !forceReel;
 const phoneQ = matchMedia('(max-width: 760px), (pointer: coarse) and (max-width: 1024px) and (orientation: portrait)');
 const pad2 = n => String(n).padStart(2, '0');
 
@@ -409,7 +411,7 @@ async function boot() {
   const reelEl = $('#reel');
   let reel = null;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, reduced, short: seen || deep || params.has('short'), anchorIndex: ANCHOR, pairs });
+    reel = createReel({ root: reelEl, lang, phone, reduced, short: !forceReel && (seen || deep || params.has('short')), anchorIndex: ANCHOR, pairs });
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());
     const skip = e => { if (reel && (e.type !== 'keydown' || ['Escape', 'Enter', ' '].includes(e.key))) reel.skip(); };
