@@ -62,12 +62,12 @@ export function loadModel(base, onProgress = () => {}) {
   if (model) return model;
   model = (async () => {
     const abs = u => new URL(u, location.href).href;
-    const got = { wasm: 0, onnx: 0 }, size = { wasm: 11.3e6, onnx: 4.6e6 };
+    // sizes as unpacked (Pages sends them gzipped, so content-length would undercount)
+    const got = { wasm: 0, onnx: 0 }, size = { wasm: 11246032, onnx: 4574861 };
     const tell = () => onProgress(Math.min(1, (got.wasm + got.onnx) / (size.wasm + size.onnx)));
     const fetchBytes = async (url, k) => {
       const r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: ${r.status}`);
-      size[k] = +r.headers.get('content-length') || size[k];
       const reader = r.body.getReader(), parts = [];
       for (;;) { const { done, value } = await reader.read(); if (done) break; parts.push(value); got[k] += value.length; tell(); }
       const out = new Uint8Array(got[k]); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
