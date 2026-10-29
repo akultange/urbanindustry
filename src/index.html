@@ -27,6 +27,12 @@
     <span class="r-loc" data-hud="loc">Tbilisi — Worldwide</span>
     <span class="r-pct" data-hud="pct"></span>
   </div>
+  <div class="r-gate">
+    <p class="r-q">What’s in the box?</p>
+    <button type="button" class="r-open"><i class="r-eq" aria-hidden="true"><b></b><b></b><b></b></i><span>Open it, sound on</span></button>
+    <button type="button" class="r-mute">or open without sound</button>
+  </div>
+  <button type="button" class="r-sound" data-hud="sound" aria-pressed="false">Sound on</button>
   <button type="button" class="r-skip" data-hud="skip">Skip</button>
 </div>
 <noscript><style>.reel { display: none !important; }</style></noscript>
@@ -41,6 +47,7 @@
     <button type="button" class="nav-about" data-go="about" data-i18n="navAbout">About</button>
   </nav>
   <div class="actions">
+    <button type="button" class="sound-btn" id="sound-btn" aria-pressed="false" aria-label="Sound"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
     <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ka" lang="ka">KA</button><button type="button" data-lang="en" lang="en">EN</button></div>
     <button type="button" class="bag-btn" id="bag-btn" aria-haspopup="dialog"><span data-i18n="bag">Bag</span> (<span id="bag-count">00</span>)</button>
   </div>

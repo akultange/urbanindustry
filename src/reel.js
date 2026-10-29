@@ -7,22 +7,26 @@
 // Flash safety (WCAG 2.3.1): the order keeps every region of the screen under three light/dark
 // flashes a second; tools/flash_check.py verifies the filmed frames. Reduced motion gets a still.
 
+import LOGO from './logo.json';
+
 const BLUE = '#a2c1f0', PAPER = '#ecebe7', INK = '#0e0f12';
 const CUT = 400 / 3;      // 133 ms: four frames at 30 fps
 const PAIR_M = 0.43 * 0.92; // a pair's width on the real wall, in metres (scene.js SHOE_W x content)
 
 const COPY = {
   en: {
-    loc: 'Tbilisi — Worldwide', loading: 'Loading', ready: 'Ready', skip: 'Skip',
+    loc: 'Tbilisi — Worldwide', loading: 'Loading', ready: 'Ready', skip: 'Skip', soundOn: 'Sound on', soundOff: 'Sound off',
     field: 'Nike Dunk Low', night: 'The wall', day: 'The wall', blueprint: 'Side view — EU 36–45', beam: 'Light it up',
     silhouette: 'A classic', held: 'From our feed', halftone: '144K on Instagram', price: 'In stock',
     swatch: 'Colourways', box: 'Ships worldwide',
+    gateQ: 'What’s in the box?', gateOpen: 'Open it, sound on', gateMute: 'or open without sound',
   },
   ka: {
-    loc: 'თბილისი — მთელ მსოფლიოში', loading: 'იტვირთება', ready: 'მზადაა', skip: 'გამოტოვება',
+    loc: 'თბილისი — მთელ მსოფლიოში', loading: 'იტვირთება', ready: 'მზადაა', skip: 'გამოტოვება', soundOn: 'ხმის ჩართვა', soundOff: 'ხმის გამორთვა',
     field: 'Nike Dunk Low', night: 'კედელი', day: 'კედელი', blueprint: 'გვერდხედი — EU 36–45', beam: 'აანთე',
     silhouette: 'კლასიკა', held: 'ჩვენი გვერდიდან', halftone: '144 ათასი Instagram-ზე', price: 'მარაგშია',
     swatch: 'ფერები', box: 'ვაგზავნით მსოფლიოში',
+    gateQ: 'რა არის ყუთში?', gateOpen: 'გახსენი ხმით', gateMute: 'ან გახსენი ხმის გარეშე',
   },
 };
 
@@ -60,8 +64,10 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
   const cache = new Map();
   const C = () => COPY[lang] || COPY.en;
   let W = 1, H = 1, dpr = 1, A = null;
-  let cuts = [], idx = -1, t0 = 0, raf = 0, holding = false, done = false, skipped = false;
-  let onEnd = null, pct = 0, current = null;
+  let cuts = [], idx = -1, t0 = null, raf = 0, holding = false, done = false, skipped = false;
+  let pct = 0, current = null, clock = null, endP = null, endRes = null;
+  const arm = () => { endP = new Promise(r => { endRes = r; }); };
+  const finish = () => { done = true; if (endRes) { const r = endRes; endRes = null; r(); } };
 
   // ---------------------------------------------------------------- geometry: the pair's texture layer, centred on screen
   function measure() {
@@ -321,6 +327,96 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
     }
   }
 
+
+  // ---------------------------------------------------------------- the gate: a closed shoebox
+  // "What's in the box?" The tap that opens it is also the click browsers need before sound can play.
+  const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  function boxGeom() {
+    const bw = A.cw * (phone ? 1.08 : 1.14), bh = bw * 0.36;
+    const x0 = A.cx - bw / 2, y1 = A.sole + bh * 0.1, y0 = y1 - bh;
+    return { bw, bh, x0, y0, y1, lidH: bh * 0.34, over: bw * 0.016, topH: bh * 0.2, inset: bw * 0.045 };
+  }
+  // soft light, built from faint stacked shapes so the edges fall off smoothly (canvas filters aren't in Safari)
+  function column(b, ty, a) {
+    const half = (b.bw - b.inset * 3.6) / 2, hgt = H * (0.18 + 0.9 * a), N = 14;
+    for (let i = 0; i < N; i++) {
+      const s = i / (N - 1);                       // 0: the core, 1: the widest, faintest layer
+      const wb = half * (0.55 + 0.65 * s), wt = wb * (1.35 + 0.9 * s), top = ty - hgt * (1 - 0.25 * s);
+      const al = a * 0.11 * (1 - 0.55 * s);
+      const lg = g.createLinearGradient(0, ty, 0, top);
+      lg.addColorStop(0, `rgba(255,255,255,${al})`); lg.addColorStop(0.45, `rgba(236,244,255,${al * 0.55})`); lg.addColorStop(1, 'rgba(236,244,255,0)');
+      g.fillStyle = lg;
+      g.beginPath(); g.moveTo(A.cx - wb, ty); g.lineTo(A.cx + wb, ty); g.lineTo(A.cx + wt, top); g.lineTo(A.cx - wt, top); g.closePath(); g.fill();
+    }
+  }
+  function drawBox(open = 0, nudge = 0) {
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fill(BLUE);
+    const b = boxGeom();
+    const k = Math.max(0, Math.min(1, open)), ty = b.y0 + b.lidH * 0.6;
+    const clamp = x => Math.max(0, Math.min(1, x));
+    // floor shadow
+    g.save(); g.translate(A.cx, b.y1 + 2); g.scale(1, 0.09);
+    const sg = g.createRadialGradient(0, 0, 0, 0, 0, b.bw * 0.66);
+    sg.addColorStop(0, 'rgba(20,40,80,0.42)'); sg.addColorStop(1, 'rgba(20,40,80,0)');
+    g.fillStyle = sg; g.beginPath(); g.arc(0, 0, b.bw * 0.66, 0, Math.PI * 2); g.fill(); g.restore();
+    // the light inside: it leads the lid, rises out of the opening as a soft column, then fills the room
+    if (k > 0) {
+      const a = 1 - Math.pow(1 - clamp(k / 0.75), 3);
+      const bloom = Math.pow(clamp((k - 0.45) / 0.55), 3);
+      const cy = ty - b.bh * 0.2, r = b.bw * (0.7 + 1.6 * a);
+      const rg = g.createRadialGradient(A.cx, cy, 0, A.cx, cy, r);
+      rg.addColorStop(0, `rgba(248,251,255,${0.55 * a})`); rg.addColorStop(0.5, `rgba(214,229,252,${0.3 * a})`); rg.addColorStop(1, 'rgba(162,193,240,0)');
+      g.fillStyle = rg; g.fillRect(0, 0, W, H);
+      column(b, ty, a);
+      if (bloom > 0) { g.fillStyle = `rgba(244,248,255,${0.82 * bloom})`; g.fillRect(0, 0, W, H); }
+    }
+    // body: a black box, lit from the top left
+    const body = g.createLinearGradient(b.x0, b.y0, b.x0 + b.bw, b.y1);
+    body.addColorStop(0, '#24262b'); body.addColorStop(0.55, '#16171a'); body.addColorStop(1, '#0c0d0f');
+    g.fillStyle = body; g.fillRect(b.x0, ty, b.bw, b.bh - b.lidH * 0.6);
+    g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(b.x0, ty, b.bw, 1);
+    // the open top (seen when the lid lifts): white tissue glowing, its light catching the rim
+    if (k > 0) {
+      const tt = clamp(k / 0.22);
+      g.fillStyle = `rgba(250,252,255,${tt})`;
+      g.beginPath(); g.moveTo(b.x0 + b.inset, ty); g.lineTo(b.x0 + b.bw - b.inset, ty); g.lineTo(b.x0 + b.bw - b.inset * 1.8, ty - b.topH * 0.9); g.lineTo(b.x0 + b.inset * 1.8, ty - b.topH * 0.9); g.closePath(); g.fill();
+      const rim = g.createLinearGradient(0, ty, 0, ty + b.bh * 0.35);
+      rim.addColorStop(0, `rgba(235,243,255,${0.22 * tt})`); rim.addColorStop(1, 'rgba(235,243,255,0)');
+      g.fillStyle = rim; g.fillRect(b.x0, ty, b.bw, b.bh * 0.35);
+    }
+    // lid: lifts and tips back as it opens (done by 80%), with a hover nudge before
+    const o = ease(clamp(k / 0.8));
+    const lift = -nudge * 5 - o * (b.bh * 2.2 + H * 0.25);
+    g.save();
+    g.translate(A.cx, b.y0 + lift); g.rotate(-0.12 * o); g.translate(-A.cx, -(b.y0));
+    g.globalAlpha = 1 - Math.max(0, (o - 0.6) / 0.4);
+    const lx = b.x0 - b.over, lw = b.bw + b.over * 2;
+    // lid top face
+    const top = g.createLinearGradient(0, b.y0 - b.topH, 0, b.y0);
+    top.addColorStop(0, '#34373d'); top.addColorStop(1, '#25272c');
+    g.fillStyle = top;
+    g.beginPath(); g.moveTo(lx + b.inset, b.y0 - b.topH); g.lineTo(lx + lw - b.inset, b.y0 - b.topH); g.lineTo(lx + lw, b.y0); g.lineTo(lx, b.y0); g.closePath(); g.fill();
+    // lid front band
+    const band = g.createLinearGradient(0, b.y0, 0, b.y0 + b.lidH);
+    band.addColorStop(0, '#1d1f23'); band.addColorStop(1, '#121316');
+    g.fillStyle = band; g.fillRect(lx, b.y0, lw, b.lidH);
+    g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(lx, b.y0, lw, 1);
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(lx, b.y0 + b.lidH - 1, lw, 1.5);
+    // the lid's lower edge, lit from inside the box
+    if (k > 0) { g.fillStyle = `rgba(230,240,255,${0.35 * clamp(k / 0.2)})`; g.fillRect(lx, b.y0 + b.lidH - 1.5, lw, 1.5); }
+    // their wordmark on the lid
+    const lh = b.lidH * 0.42, s2 = lh / LOGO.h, lw2 = LOGO.w * s2;
+    g.save(); g.translate(A.cx - lw2 / 2, b.y0 + (b.lidH - lh) / 2); g.scale(s2, s2);
+    g.fillStyle = '#ffffff'; g.fill(new Path2D(LOGO.d), 'evenodd'); g.restore();
+    // a thin blue stripe, like a box label
+    g.fillStyle = BLUE; g.fillRect(lx + lw - b.inset * 1.6, b.y0, b.inset * 0.5, b.lidH);
+    g.restore();
+    canvas.classList.add('drawn');
+    root.dataset.tone = 'w';
+  }
+  let gateState = null;
+
   // ---------------------------------------------------------------- one cut
   function draw(c) {
     current = c;
@@ -345,10 +441,12 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
     return t;
   }
 
-  function tick(now) {
+  function tick(rafNow) {
     raf = requestAnimationFrame(tick);
-    // the clock starts on the first frame actually shown (a background tab may not draw for a while)
-    if (!t0) t0 = now;
+    // with sound the audio clock leads; otherwise the clock starts on the first frame actually shown
+    // (a background tab may not draw for a while)
+    const now = clock ? clock() : rafNow;
+    if (t0 === null) t0 = now;
     const el = now - t0;
     if (holding) {
       // still loading: hold the night wall (a still frame, nothing flashing) until the app says land
@@ -359,22 +457,66 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
     while (n + 1 < cuts.length && el >= cuts[n + 1].t) n++;
     if (n !== idx) { idx = n; draw(cuts[n].c); }
     const end = cuts.length ? cuts[cuts.length - 1].t + cuts[cuts.length - 1].d : 0;
-    if (el >= end && !done) {
-      done = true;
-      if (onEnd) onEnd();
-    }
+    if (el >= end && !done) finish();
   }
 
   const api = {
     root,
     // capture mode: lay out the script and draw any moment of it by hand
     prepare() { measure(); root.classList.add('on'); return build(); },
-    timeline() { return cuts.map(k => ({ t: k.t, d: k.d })); },
+    timeline() { return cuts.map(k => ({ t: k.t, d: k.d, shot: k.c[0], neg: k.c[1] })); },
     seek(ms) { let n = 0; while (n + 1 < cuts.length && ms >= cuts[n + 1].t) n++; draw(cuts[n].c); },
     drawCut(c) { draw(c); },
     set(name, bmp, i) { if (name === 'pair') img.pairs[i] = bmp; else img[name] = bmp; if (name === 'anchor') cache.clear(); },
     progress: setPct,
     anchorRect() { return { x: A.x, y: A.y, w: A.w, h: A.h }; },
+    // the box: resolves with { sound } when it's opened (tap, click, Enter or Space).
+    // onOpen runs inside the click itself, so sound can start there.
+    gate({ onOpen } = {}) {
+      measure(); root.classList.add('on', 'gate');
+      const q = root.querySelector('.r-gate');
+      q.querySelector('.r-q').textContent = C().gateQ;
+      q.querySelector('.r-open span').textContent = C().gateOpen;
+      q.querySelector('.r-mute').textContent = C().gateMute;
+      const place = () => { const b = boxGeom(); q.style.top = `${Math.round(b.y1 + Math.max(26, b.bh * 0.32))}px`; };
+      place();
+      let nudge = 0, target = 0, anim = 0;
+      const frame = () => { nudge += (target - nudge) * 0.25; drawBox(0, nudge); anim = Math.abs(target - nudge) > 0.01 ? requestAnimationFrame(frame) : 0; };
+      drawBox();
+      const inBox = e => { const b = boxGeom(); return e.clientX > b.x0 - 20 && e.clientX < b.x0 + b.bw + 20 && e.clientY > b.y0 - b.topH - 20 && e.clientY < b.y1 + 20; };
+      const move = e => { const t = inBox(e) || e.target.closest?.('.r-open') ? 1 : 0; if (t !== target) { target = t; canvas.style.cursor = t ? 'pointer' : ''; if (!anim) anim = requestAnimationFrame(frame); } };
+      return new Promise(res => {
+        const done = (withSound, e) => {
+          if (e) { e.preventDefault(); e.stopPropagation(); }
+          root.removeEventListener('pointermove', move); root.removeEventListener('click', onClick, true); removeEventListener('keydown', onKey, true);
+          const ready = onOpen ? onOpen(withSound) : null;
+          gateState = { withSound };
+          res({ sound: withSound, ready });
+        };
+        const onClick = e => { if (e.target.closest('.r-mute')) return done(false, e); if (e.target.closest('.r-skip, [data-hud=sound]')) return; done(true, e); };
+        const onKey = e => { if (e.key === 'Enter' || e.key === ' ') { if (document.activeElement?.closest?.('.r-mute')) return done(false, e); done(true, e); } };
+        root.addEventListener('pointermove', move);
+        root.addEventListener('click', onClick, true);
+        addEventListener('keydown', onKey, true);
+        this._gatePlace = place;
+      });
+    },
+    // the lid comes off and the light pours out (~0.55 s), then the reel can start
+    openBox(ms = 560) {
+      root.classList.remove('gate'); root.classList.add('opening');
+      const t0b = performance.now();
+      return new Promise(res => {
+        const step = now => {
+          const k = Math.min(1, (now - t0b) / ms);
+          drawBox(k);
+          if (k < 1) requestAnimationFrame(step); else { root.classList.remove('opening'); res(); }
+        };
+        requestAnimationFrame(step);
+        // a background tab gets no frames: don't hang
+        setTimeout(() => { if (root.classList.contains('opening')) { root.classList.remove('opening'); res(); } }, ms + 1500);
+      });
+    },
+    drawGate(k) { measure(); drawBox(k); },
     // show the first frame now (a still) while the rest of the page warms up
     prime() { measure(); root.classList.add('on'); draw((short ? SHORT : SCRIPT)[0]); },
     // runs the script; resolves when it has played through (or was skipped)
@@ -386,28 +528,38 @@ export function createReel({ root, lang = 'ka', phone = false, reduced = false, 
         draw(['field', 0, 'w']);
         return new Promise(r => setTimeout(r, 700));
       }
-      build();
-      return new Promise(res => {
-        onEnd = res;
-        t0 = 0; idx = -1;
-        raf = requestAnimationFrame(tick);
-      });
+      build(); arm();
+      t0 = null; idx = -1; done = false; skipped = false; holding = false;
+      raf = requestAnimationFrame(tick);
+      return endP;
     },
+    // play it again from the top on another clock (the audio clock, when sound comes on)
+    restart(startMs, clockFn) {
+      if (!cuts.length) build();
+      clock = clockFn || null;
+      if (done) arm();
+      done = false; holding = false; skipped = false; idx = -1; t0 = startMs;
+      if (!raf) raf = requestAnimationFrame(tick);
+    },
+    // back on the screen's clock, without a jump (sound went off mid-reel and the audio clock will stop)
+    unclock() { if (!clock) return; if (t0 !== null) t0 = performance.now() - (clock() - t0); clock = null; },
+    ended() { return endP || Promise.resolve(); },
+    get running() { return !done && !holding; },
     // keep the wall running until land() is called
-    hold() { if (!holding) { holding = true; t0 = 0; } },
+    hold() { if (!holding) { holding = true; t0 = null; } },
     skip() {
       if (done || skipped) return;
-      skipped = true; done = true;
-      if (onEnd) onEnd();
+      skipped = true; finish();
     },
     // the match cut: the reel goes, the real wall is already drawn underneath
     land({ fade = false } = {}) {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf); raf = 0;
       if (fade) { root.classList.add('fade'); setTimeout(() => root.remove(), 450); }
       else root.remove();
     },
-    resize() { if (!root.isConnected) return; measure(); if (current) draw(current); },
+    resize() { if (!root.isConnected) return; measure(); if (root.classList.contains('gate')) { drawBox(); if (api._gatePlace) api._gatePlace(); } else if (current) draw(current); },
     get skipped() { return skipped; },
+    copy: k => C()[k],
   };
   if (hud.loc) hud.loc.textContent = C().loc;
   if (hud.skip) { hud.skip.textContent = C().skip; hud.skip.addEventListener('click', () => api.skip()); }

@@ -1,5 +1,6 @@
 import { createScene } from './scene.js';
 import { createReel } from './reel.js';
+import { createSound } from './sound.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -8,9 +9,11 @@ const catalog = JSON.parse($('#catalog').textContent);
 const pairs = catalog.pairs;
 const ASSET = window.__ASSET_BASE || 'assets/';
 const IG = 'https://ig.me/m/urbanindustry_';
-// ?reel always plays the full loader (for demos on machines with animations turned off)
+// the loader plays for everyone; reduced motion only swaps the camera moves for fades.
+// ?reel always plays the full loader (a repeat visit otherwise gets the short one)
 const forceReel = new URLSearchParams(location.search).has('reel');
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches && !forceReel;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sound = createSound();
 const phoneQ = matchMedia('(max-width: 760px), (pointer: coarse) and (max-width: 1024px) and (orientation: portrait)');
 const pad2 = n => String(n).padStart(2, '0');
 
@@ -33,7 +36,7 @@ const T = {
     copied: 'შეკვეთა დაკოპირდა — ჩასვი ჩატში', added: 'კალათაში დაემატა', pickFirst: 'ჯერ ზომა აირჩიე', soldOut: 'ამოიწურა', remove: 'წაშლა',
     msg: (lines, total) => `გამარჯობა! მინდა შევუკვეთო:\n${lines}${total ? `\nჯამი: ${total} ₾` : ''}\n(urbanindustry საიტიდან)`,
     line: (p, s) => `${p.brand} ${p.model} (${p.color.ka}), ზომა ${s} — ${p.price} ₾`,
-    title: 'Urban Industry — სნიკერები, თბილისი', size: 'ზომა',
+    title: 'Urban Industry — სნიკერები, თბილისი', size: 'ზომა', sound: 'ხმა',
   },
   en: {
     skip: 'Skip to the pairs', navWall: 'Wall', navAbout: 'About', bag: 'Bag',
@@ -52,7 +55,7 @@ const T = {
     copied: 'Order copied — paste it in the chat', added: 'Added to your bag', pickFirst: 'Pick your size first', soldOut: 'Sold out', remove: 'Remove',
     msg: (lines, total) => `Hi! I'd like to order:\n${lines}${total ? `\nTotal: ${total} ₾` : ''}\n(from the urbanindustry site)`,
     line: (p, s) => `${p.brand} ${p.model} (${p.color.en}), EU ${s} — ${p.price} ₾`,
-    title: 'Urban Industry — sneakers, Tbilisi', size: 'Size',
+    title: 'Urban Industry — sneakers, Tbilisi', size: 'Size', sound: 'Sound',
   },
 };
 const store = {
@@ -68,6 +71,7 @@ function applyLang() {
   document.title = t('title');
   $$('[data-i18n]').forEach(el => { const v = t(el.dataset.i18n); if (typeof v === 'string') el.textContent = v; });
   $$('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  $('#sound-btn').setAttribute('aria-label', t('sound')); $('#sound-btn').title = t('sound');
   buildLabels(); buildList();
   if (current >= 0) fillProduct(current);
   renderBag(); updateWalkbar(true);
@@ -106,12 +110,19 @@ let labelEls = [];
 function buildLabels() {
   labelsEl.innerHTML = '';
   labelEls = pairs.map((p, i) => {
+    // a price tag under the lit shelf: a dark plate so it reads over the LED's glow, the price lit like the sign
     const d = document.createElement('div'); d.className = 'lbl';
-    d.innerHTML = `<span class="idx">${pad2(i + 1)}</span><b>${p.model}</b><span>${p.brand} · ${p.price} ₾</span>`;
+    d.innerHTML = `<div class="tag"><span class="meta">${pad2(i + 1)} · ${p.brand}</span><span class="row"><b>${p.model}</b><span class="price">${p.price} ₾</span></span></div>`;
     labelsEl.append(d); return d;
   });
 }
 let hoverI = -1;
+const FOOT = 64; // the footer bar's height (style.css .bottom)
+// one place for hover: the shelf lights, the tag shows, the footer hint steps aside
+function setHover(i) {
+  hoverI = i; scene && scene.hover(i);
+  document.body.classList.toggle('hovering', i >= 0);
+}
 function syncOverlay(s) {
   if (phone || current >= 0) return;
   for (let i = 0; i < labelEls.length; i++) {
@@ -119,7 +130,10 @@ function syncOverlay(s) {
     const on = i === hoverI;
     if (on) {
       const p = s.labelPoint(i);
-      if (p) el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y + 6)}px) translate(-50%, 0)`;
+      // never down into the footer (the camera leaves room for it; this is the safety net)
+      if (!el._h) el._h = el.firstChild.offsetHeight;
+      const y = Math.min(p ? p.y + 6 : 0, innerHeight - FOOT - 12 - el._h);
+      if (p) el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(y)}px) translate(-50%, 0)`;
     }
     el.classList.toggle('on', on);
   }
@@ -158,7 +172,7 @@ function fillProduct(i) {
     const out = p.soldOut.includes(s);
     b.disabled = out; b.setAttribute('aria-checked', String(picked === s));
     b.setAttribute('aria-label', out ? `${t('size')} ${s}, ${t('soldOut')}` : `${t('size')} ${s}`);
-    b.addEventListener('click', () => { picked = s; fillProduct(i); });
+    b.addEventListener('click', () => { picked = s; fillProduct(i); sound.ui('size'); });
     sizes.append(b);
   }
   const order = $('#order');
@@ -184,10 +198,12 @@ function open(i, { push = true } = {}) {
   if (changed) picked = null;
   current = i;
   fillProduct(i);
+  if (!productEl.classList.contains('open')) sound.ui('open');
   productEl.classList.add('open'); productEl.setAttribute('aria-hidden', 'false');
   document.body.classList.add('focused');
   if (phone) { document.body.classList.add('sheet-open'); if (scene) { scene.walkTo(i); scene.sheet(true); } }
-  if (scene) { scene.focus(i); scene.hover(-1); }
+  if (scene) scene.focus(i);
+  setHover(-1);
   hiRes(i); hiRes((i + 1) % pairs.length); hiRes((i - 1 + pairs.length) % pairs.length);
   if (push && location.hash !== `#/p/${pairs[i].id}`) history.pushState({ p: pairs[i].id }, '', `#/p/${pairs[i].id}`);
   if (!phone) setTimeout(() => { if (current === i) $('#sizes .size:not(:disabled)')?.focus({ preventScroll: true }); }, 700);
@@ -195,6 +211,7 @@ function open(i, { push = true } = {}) {
 function close({ push = true } = {}) {
   if (current < 0) return;
   current = -1; picked = null;
+  sound.ui('close');
   productEl.classList.remove('open'); productEl.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('focused', 'sheet-open');
   if (scene && !phone) scene.focus(-1);
@@ -217,6 +234,7 @@ $('#order').addEventListener('click', async e => {
   if (current < 0) return;
   const p = pairs[current];
   if (picked == null) { e.preventDefault(); toast(t('pickFirst')); $('#sizes').animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }], { duration: 260 }); return; }
+  sound.ui('order');
   const ok = await copy(t('msg', t('line', p, picked)));
   toast(ok ? t('copied') : t('msg', t('line', p, picked)).split('\n')[1]);
 });
@@ -246,7 +264,7 @@ function renderBag() {
 $('#add-bag').addEventListener('click', () => {
   if (current < 0) return;
   if (picked == null) { toast(t('pickFirst')); return; }
-  bag.push({ id: pairs[current].id, size: picked }); store.set('bag', bag); renderBag();
+  bag.push({ id: pairs[current].id, size: picked }); store.set('bag', bag); renderBag(); sound.ui('bag');
   const btn = $('#bag-btn'); btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
   toast(t('added'));
 });
@@ -304,8 +322,7 @@ addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
   } else if (scene && !phone && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
     e.preventDefault();
-    hoverI = hoverI < 0 ? 0 : (hoverI + (e.key === 'ArrowRight' ? 1 : -1) + pairs.length) % pairs.length;
-    scene.hover(hoverI);
+    setHover(hoverI < 0 ? 0 : (hoverI + (e.key === 'ArrowRight' ? 1 : -1) + pairs.length) % pairs.length);
   } else if (e.key === 'Enter' && hoverI >= 0 && current < 0 && document.activeElement === document.body) open(hoverI);
 });
 
@@ -317,9 +334,9 @@ canvas.addEventListener('pointermove', e => {
   scene.pointer(e.clientX, e.clientY, true);
   if (current >= 0) return;
   const i = scene.pick(e.clientX, e.clientY);
-  if (i !== hoverI) { hoverI = i; scene.hover(i); canvas.style.cursor = i >= 0 ? 'pointer' : ''; }
+  if (i !== hoverI) { setHover(i); canvas.style.cursor = i >= 0 ? 'pointer' : ''; if (i >= 0) sound.ui('hover'); }
 });
-canvas.addEventListener('pointerleave', () => { if (!scene || phone) return; scene.pointer(0, 0, false); if (current < 0) { hoverI = -1; scene.hover(-1); } });
+canvas.addEventListener('pointerleave', () => { if (!scene || phone) return; scene.pointer(0, 0, false); if (current < 0) setHover(-1); });
 canvas.addEventListener('click', e => {
   if (!scene || phone) return;
   if (current >= 0) {
@@ -368,6 +385,7 @@ function updateWalkbar(force) {
   if (!phone || !scene) return;
   const i = scene.walkIndex();
   if (i === wbIndex && !force) return;
+  if (!force) sound.ui('step');
   wbIndex = i;
   const p = pairs[i];
   $('#wb-kicker').textContent = `${pad2(i + 1)} / ${p.brand}`;
@@ -401,6 +419,15 @@ function noGL() {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ANCHOR = Math.max(0, pairs.findIndex(p => p.id === 'dunk'));
 
+// sound: the header toggle, remembered; browsers only start audio from a click or a key
+const soundBtn = $('#sound-btn');
+const setSoundUI = on => { soundBtn.setAttribute('aria-pressed', String(on)); const r = $('#reel [data-hud=sound]'); if (r) { r.setAttribute('aria-pressed', String(on)); r.textContent = reelCopy(on ? 'soundOff' : 'soundOn'); } };
+let reelCopy = k => k;
+async function soundOn() { const ok = await sound.enable(); setSoundUI(ok); store.set('sound', ok); return ok; }
+let liveReel = null; // the reel, while it runs: if sound goes off mid-reel it has to leave the audio clock
+function soundOff() { sound.disable(); liveReel?.unclock(); setSoundUI(false); store.set('sound', false); }
+soundBtn.addEventListener('click', () => (sound.on ? soundOff() : soundOn().then(ok => ok && sound.ui('hover'))));
+
 async function boot() {
   applyLang();
   const params = new URLSearchParams(location.search);
@@ -410,14 +437,40 @@ async function boot() {
   const deep = /^#\/p\//.test(location.hash);
   const reelEl = $('#reel');
   let reel = null;
+  if (!(window.AudioContext || window.webkitAudioContext)) soundBtn.hidden = true;
   if (reelEl && !params.has('noreel') && !saveData) {
-    reel = createReel({ root: reelEl, lang, phone, reduced, short: !forceReel && (seen || deep || params.has('short')), anchorIndex: ANCHOR, pairs });
+    reel = createReel({ root: reelEl, lang, phone, reduced: false, short: !forceReel && (seen || deep || params.has('short')), anchorIndex: ANCHOR, pairs });
+    reelCopy = reel.copy; liveReel = reel;
     html.classList.add('intro');
     addEventListener('resize', () => reel && reel.resize());
-    const skip = e => { if (reel && (e.type !== 'keydown' || ['Escape', 'Enter', ' '].includes(e.key))) reel.skip(); };
+    const isSoundBtn = e => e.target && e.target.closest && e.target.closest('[data-hud=sound]');
+    const atGate = () => reelEl.classList.contains('gate') || reelEl.classList.contains('opening');
+    const skip = e => { if (isSoundBtn(e) || atGate()) return; if (reel && (e.type !== 'keydown' || ['Escape', 'Enter', ' '].includes(e.key))) reel.skip(); };
     reelEl.addEventListener('pointerdown', skip);
     addEventListener('keydown', skip);
+    // "Sound on" replays the reel from the top, with the score on the audio clock
+    const rs = reelEl.querySelector('[data-hud=sound]');
+    rs.textContent = reel.copy('soundOn');
+    if (soundBtn.hidden) rs.hidden = true;
+    rs.addEventListener('pointerdown', e => e.stopPropagation());
+    rs.addEventListener('click', async () => {
+      if (sound.on) { soundOff(); return; }
+      if (!(await soundOn())) return;
+      const start = sound.now() + 0.12;
+      reel.restart(start * 1000, () => sound.now() * 1000);
+      sound.reel(reel.timeline(), start);
+    });
   } else reelEl?.remove();
+  // first visit: the closed box. Opening it is the click that lets the sound play.
+  const gateP = reel && !seen && !deep && !capture && !params.has('nogate')
+    ? reel.gate({ onOpen: withSound => (withSound ? soundOn() : (soundOff(), null)) })
+    : null;
+  // a returning visitor who left sound on (and isn't at the box, which asks): resume on their first click
+  if (!gateP && store.get('sound', false)) {
+    setSoundUI(false);
+    const resume = () => { removeEventListener('pointerdown', resume, true); removeEventListener('keydown', resume, true); if (!sound.on) soundOn(); };
+    addEventListener('pointerdown', resume, true); addEventListener('keydown', resume, true);
+  }
 
   // what the reel needs first: the pair it is built around
   let loaded = 0; const total = pairs.length + 4;
@@ -435,7 +488,7 @@ async function boot() {
   await Promise.race([new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))), sleep(150)]);
   try { scene = createScene(canvas, { catalog, tier: phone ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay, manual: capture }); } catch (e) { console.error(e); scene = null; }
   bitmaps.forEach((b, i) => b && scene && scene.setShoeImage(i, b, false));
-  const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + 30), 84); };
+  const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + 30), FOOT + 50); };
   const sceneReady = (async () => {
     if (!scene) throw new Error('no webgl');
     margins();
@@ -446,12 +499,13 @@ async function boot() {
   })();
   let sceneOk = null;
   // warm the GPU up under the reel: the sharp anchor layer, its mips, the first draw
+  const matchCut = !!reel && !reduced;
   const warmed = sceneReady.then(async () => {
     sceneOk = true;
-    if (reel && !reduced) {
+    if (reel) {
       const b = await anchorP;
       if (b) { scene.setShoeImage(ANCHOR, b, true); hiDone.add(ANCHOR); }
-      scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce();
+      scene.resize(); if (matchCut) scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce();
     }
   }, () => { sceneOk = false; });
 
@@ -460,34 +514,60 @@ async function boot() {
     await anchorP; await sceneReady; await Promise.allSettled([document.fonts.ready]);
     await new Promise(r => { const k = setInterval(() => { if (loaded >= total) { clearInterval(k); r(); } }, 50); });
     reel.prepare();
-    window.__cap = { reel, scene, land: () => { const b = bitmaps[ANCHOR]; scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land(); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); } };
+    const { renderScore } = await import('./sound.js');
+    window.__cap = {
+      reel, scene,
+      land: () => { scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land(); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); },
+      // the score for the preview video, as base64 WAV
+      score: async ({ boxAt, reelAt, landAt }) => {
+        const sweep = pairs.map((_, k) => 0.55 + k * 0.065);
+        const { wav, peak } = await renderScore({ timeline: reel.timeline(), boxAt, reelAt, landAt, sweep });
+        let bin = ''; for (let i = 0; i < wav.length; i += 0x8000) bin += String.fromCharCode.apply(null, wav.subarray(i, i + 0x8000));
+        return { b64: btoa(bin), peak };
+      },
+    };
     anchorP.then(b => b && scene.setShoeImage(ANCHOR, b, true));
     return;
   }
   // the reel starts once its pair is decoded (or after a short wait on a slow line)
   if (reel) {
-    await Promise.race([anchorP, sleep(1600)]);
-    try { await Promise.race([document.fonts.ready, sleep(500)]); } catch (e) {}
-    // the first frame holds while the GPU warms up (so the cuts don't stutter), then the cuts run
-    reel.prime();
-    await Promise.race([warmed, sleep(1400)]);
-    await reel.play();
+    if (gateP) {
+      const choice = await gateP;
+      if (choice.ready) await choice.ready;
+      sound.ui('box');
+      // the lid comes off while the last of the loading finishes
+      await Promise.all([reel.openBox(), Promise.race([anchorP, sleep(1600)]), Promise.race([warmed, sleep(1400)])]);
+    } else {
+      await Promise.race([anchorP, sleep(1600)]);
+      try { await Promise.race([document.fonts.ready, sleep(500)]); } catch (e) {}
+      // the first frame holds while the GPU warms up (so the cuts don't stutter), then the cuts run
+      reel.prime();
+      await Promise.race([warmed, sleep(1400)]);
+    }
+    const run = reel.play();
+    if (sound.on) { const start = sound.now() + 0.1; reel.restart(start * 1000, () => sound.now() * 1000); sound.reel(reel.timeline(), start); }
+    await run;
     if (sceneOk === null) { reel.hold(); await Promise.race([sceneReady.catch(() => {}), sleep(6000)]); }
+    // "Sound on" near the end restarts the reel: let that run play out
+    while (reel.running) await reel.ended();
   }
-  try { await sceneReady; } catch (e) { reel?.land({ fade: true }); return noGL(); }
+  try { await sceneReady; } catch (e) { sound.stopReel(); reel?.land({ fade: true }); return noGL(); }
 
   // the match cut: put the same pair on the same spot of the real wall, then pull back
+  // (with reduced motion the reel fades onto the wall instead: no zoom)
   const anchorBmp = await anchorP;
-  if (anchorBmp) { scene.setShoeImage(ANCHOR, anchorBmp, true); hiDone.add(ANCHOR); }
+  if (anchorBmp && !hiDone.has(ANCHOR)) { scene.setShoeImage(ANCHOR, anchorBmp, true); hiDone.add(ANCHOR); }
   scene.resize();
-  if (reel && !reduced) {
+  if (matchCut) {
     scene.introShot(ANCHOR, reel.anchorRect());
     scene.renderOnce();
     reel.land();
   } else {
-    html.classList.add('fade-in');
+    if (!reel) html.classList.add('fade-in');
+    scene.reveal({ instant: true }); scene.renderOnce();
     reel?.land({ fade: true });
   }
+  if (reel) sound.land(reduced ? [] : pairs.map((_, k) => 0.55 + k * 0.065));
   html.classList.add('ready', 'revealing'); html.classList.remove('loading', 'intro');
   setTimeout(() => html.classList.remove('revealing'), 2600);
   addEventListener('resize', () => {
@@ -498,7 +578,7 @@ async function boot() {
   });
   document.fonts?.ready.then(() => { margins(); if (current < 0 && !scene.state.held) scene.resize(); });
   route(false);
-  scene.reveal({ instant: !reel || reduced });
+  scene.reveal({ instant: !matchCut });
   updateWalkbar(true);
   const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
   if (!phone && !scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 2200 + i * 140)));

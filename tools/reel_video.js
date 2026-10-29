@@ -24,7 +24,26 @@ fs.mkdirSync(out, { recursive: true });
   const list = [];
   let n = 0;
   const shot = async () => { const f = `${out}/f${String(n++).padStart(4, '0')}.png`; await p.screenshot({ path: f }); return f; };
-  // a beat of the first frame, as the page would show it while the pair decodes
+  // the closed box, then the lid coming off (the visitor's tap is at GATE seconds)
+  const GATE = process.env.NO_GATE ? 0 : 1.2, OPEN = 0.56;
+  if (GATE) {
+    await p.evaluate(() => { window.__cap.reel.gate(); });
+    list.push([await shot(), GATE]);
+    await p.evaluate(() => { const r = document.querySelector('#reel'); r.classList.remove('gate'); r.classList.add('opening'); });
+    const nOpen = Math.round(OPEN * FPS);
+    for (let k = 1; k <= nOpen; k++) {
+      await p.evaluate(k => window.__cap.reel.drawGate(k), k / nOpen);
+      list.push([await shot(), OPEN / nOpen]);
+    }
+    await p.evaluate(() => document.querySelector('#reel').classList.remove('opening'));
+  }
+  // the film has the score, so show the controls as a visitor who opened it with sound sees them
+  await p.evaluate(() => {
+    const r = document.querySelector('#reel [data-hud=sound]');
+    r.textContent = window.__cap.reel.copy('soundOff'); r.setAttribute('aria-pressed', 'true');
+    document.querySelector('#sound-btn').setAttribute('aria-pressed', 'true');
+  });
+  const reelAt = GATE ? GATE + OPEN : 0;
   await p.evaluate(() => window.__cap.reel.seek(0));
   for (const c of cuts) {
     await p.evaluate(t => window.__cap.reel.seek(t), c.t);
@@ -41,12 +60,19 @@ fs.mkdirSync(out, { recursive: true });
     }, 1 / FPS, t);
     list.push([await shot(), 1 / FPS]);
   }
-  // hold the settled wall a moment
-  list.push([list[list.length - 1][0], 0.8]);
+  // hold the settled wall while the sound's tail rings out
+  list.push([list[list.length - 1][0], 1.6]);
+  const last = cuts[cuts.length - 1];
+  const landAt = reelAt + (last.t + last.d) / 1000;
+  const score = await p.evaluate(o => window.__cap.score(o), { boxAt: GATE ? GATE : -1, reelAt, landAt });
+  fs.writeFileSync(`${out}/score.wav`, Buffer.from(score.b64, 'base64'));
+  logs.push(`score peak ${score.peak.toFixed(3)}`);
   const txt = list.map(([f, d]) => `file '${require('path').resolve(f)}'\nduration ${d.toFixed(5)}`).join('\n') + `\nfile '${require('path').resolve(list[list.length - 1][0])}'\n`;
   fs.writeFileSync(`${out}/list.txt`, txt);
   await b.close();
   const mp4 = `${out}/reel-${kind}.mp4`;
-  execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', `${out}/list.txt`, '-vf', `fps=60,format=yuv420p${kind === 'phone' ? ',scale=780:-2' : ''}`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-movflags', '+faststart', mp4]);
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', `${out}/list.txt`, '-i', `${out}/score.wav`,
+    '-vf', `fps=60,format=yuv420p${kind === 'phone' ? ',scale=780:-2' : ''}`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+    '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', mp4]);
   console.log(mp4, list.length, 'frames;', logs.join('\n') || 'no console errors');
 })().catch(e => { console.error('FAILED', e); process.exit(1); });

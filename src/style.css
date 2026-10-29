@@ -57,8 +57,33 @@ html[lang='ka'] .reel-hud { font: 500 11.5px/1 var(--ka); letter-spacing: .03em;
 .r-cap { left: 50%; top: calc(var(--top) / 2 - 5px); transform: translateX(-50%); }
 .r-loc { right: var(--pad); top: calc(var(--top) / 2 - 5px); }
 .r-pct { left: var(--pad); bottom: 27px; }
-.r-skip { position: absolute; right: calc(var(--pad) - 10px); bottom: 17px; padding: 10px; color: inherit; font: 500 10px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
-html[lang='ka'] .r-skip { font: 500 11.5px/1 var(--ka); letter-spacing: .03em; text-transform: none; }
+.r-skip, .r-sound { position: absolute; bottom: 17px; padding: 10px; color: inherit; font: 500 10px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+.r-skip { right: calc(var(--pad) - 10px); }
+.r-sound { left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; }
+.r-sound::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
+.r-sound[aria-pressed='true']::before { opacity: 1; animation: pulse 1s ease-in-out infinite; }
+html[lang='ka'] .r-skip, html[lang='ka'] .r-sound { font: 500 11.5px/1 var(--ka); letter-spacing: .03em; text-transform: none; }
+/* the box: "What's in the box?" until it's opened */
+.r-gate { display: none; position: absolute; left: 0; right: 0; top: 64%; flex-direction: column; align-items: center; gap: 14px; text-align: center; color: #fff; }
+.reel.gate .r-gate { display: flex; animation: gate-in 600ms var(--ease) both; }
+.reel.opening .r-gate { display: flex; opacity: 0; transform: translateY(8px); transition: opacity 200ms linear, transform 300ms var(--ease); }
+@keyframes gate-in { from { opacity: 0; transform: translateY(10px); } }
+.reel.gate .r-cap, .reel.gate .r-pct, .reel.gate .r-skip, .reel.gate .r-sound,
+.reel.opening .r-cap, .reel.opening .r-pct, .reel.opening .r-skip, .reel.opening .r-sound { visibility: hidden; }
+.r-q { font: 500 clamp(26px, 3.2vw, 44px)/1.05 var(--sans); letter-spacing: -.025em; }
+html[lang='ka'] .r-q { font: 600 clamp(24px, 2.9vw, 40px)/1.15 var(--ka); font-variation-settings: "wdth" 86; letter-spacing: 0; }
+.r-open { display: inline-flex; align-items: center; gap: 12px; margin-top: 6px; height: 50px; padding: 0 24px 0 20px; border-radius: 99px; background: #0e0f12; color: #fff;
+  font: 500 14px/1 var(--sans); letter-spacing: .01em; box-shadow: 0 14px 40px -14px rgba(14, 30, 60, .6); transition: transform 200ms var(--ease), box-shadow 200ms; }
+html[lang='ka'] .r-open { font: 500 14px/1 var(--ka); }
+.r-open:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -14px rgba(14, 30, 60, .7); }
+.r-open:active { transform: scale(.98); }
+.r-eq { display: inline-flex; align-items: center; gap: 2px; height: 12px; }
+.r-eq b { width: 2px; height: 4px; border-radius: 1px; background: var(--accent); animation: eq 800ms ease-in-out infinite alternate; }
+.r-eq b:nth-child(2) { animation-delay: -250ms; animation-duration: 650ms; }
+.r-eq b:nth-child(3) { animation-delay: -500ms; animation-duration: 950ms; }
+.r-mute { padding: 6px 10px; color: rgba(14, 15, 18, .72); font: 500 12px/1 var(--sans); border-bottom: 1px solid transparent; transition: color 160ms; }
+html[lang='ka'] .r-mute { font: 500 12.5px/1 var(--ka); }
+.r-mute:hover { color: #0e0f12; }
 
 /* ------------------------------------------------------------------ stage */
 #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
@@ -88,6 +113,18 @@ html.no-gl #gl, html.no-gl #veil { display: none; }
 .nav button.is-on, .nav button:hover { color: var(--ink); }
 .nav button.is-on::after { transform: scaleX(1); }
 .actions { justify-self: end; display: flex; align-items: center; gap: 22px; }
+/* sound: four little bars, a still equaliser (dimmed) when off, dancing in their blue when on */
+.sound-btn { display: grid; place-items: center; width: 34px; height: 34px; margin-right: -6px; border-radius: 50%; color: var(--muted); transition: color 160ms; }
+.sound-btn:hover { color: var(--ink); }
+.eq { display: flex; align-items: center; gap: 2px; height: 14px; }
+.eq i { width: 2px; height: 5px; border-radius: 1px; background: currentColor; transition: height 200ms var(--ease); }
+.eq i:nth-child(2) { height: 10px; } .eq i:nth-child(3) { height: 7px; } .eq i:nth-child(4) { height: 12px; }
+.sound-btn[aria-pressed='true'] { color: var(--accent); }
+.sound-btn[aria-pressed='true'] .eq i { animation: eq 900ms ease-in-out infinite alternate; }
+.sound-btn[aria-pressed='true'] .eq i:nth-child(2) { animation-delay: -300ms; animation-duration: 700ms; }
+.sound-btn[aria-pressed='true'] .eq i:nth-child(3) { animation-delay: -600ms; animation-duration: 1100ms; }
+.sound-btn[aria-pressed='true'] .eq i:nth-child(4) { animation-delay: -150ms; animation-duration: 800ms; }
+@keyframes eq { from { height: 3px; } to { height: 13px; } }
 .lang { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 99px; }
 .lang button { font: 500 10.5px/1 var(--sans); letter-spacing: .1em; padding: 6px 8px; border-radius: 99px; color: var(--muted); transition: color 160ms, background 160ms; }
 .lang button[aria-pressed='true'] { color: var(--bg); background: var(--ink); }
@@ -115,17 +152,29 @@ body.focused .bottom .hint, body.focused .bottom .status { opacity: 0; }
 .bottom .hint, .bottom .status { transition: opacity 300ms var(--ease); }
 
 /* ------------------------------------------------------------------ shelf labels */
+/* a price tag under the lit shelf: a dark plate, so it reads over the LED's glow; the price lit like the sign */
 #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
-.lbl {
-  position: absolute; left: 0; top: 0; transform: translate(-50%, 0); text-align: center; white-space: nowrap;
-  opacity: 0; transition: opacity 120ms linear;
+.lbl { position: absolute; left: 0; top: 0; transform: translate(-50%, 0); }
+.lbl .tag {
+  display: grid; justify-items: center; gap: 6px; padding: 9px 15px 10px; border-radius: 12px; white-space: nowrap;
+  background: rgba(9, 10, 12, .74);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow: inset 0 0 0 1px rgba(200, 219, 248, .1), inset 0 1px 0 rgba(200, 219, 248, .2), 0 14px 34px -12px rgba(0, 0, 0, .75);
+  opacity: 0; transform: translateY(-5px) scale(.97); transform-origin: 50% 0;
+  transition: opacity 120ms linear, transform 300ms var(--ease);
 }
-.lbl b { display: block; font-weight: 500; font-size: 14px; letter-spacing: -.005em; color: var(--ink); text-shadow: 0 1px 12px rgba(0, 0, 0, .8); transform: translateY(4px); transition: transform 420ms var(--ease); }
-.lbl span { display: block; margin-top: 4px; font: 500 10px/1.2 var(--sans); letter-spacing: .13em; text-transform: uppercase; color: var(--accent-2); text-shadow: 0 0 14px rgba(110, 150, 255, .5); font-variant-numeric: tabular-nums; }
-.lbl.on { opacity: 1; transition: opacity 220ms linear 60ms; }
-.lbl.on b { transform: none; }
-.lbl .idx { display: block; margin-bottom: 5px; font: 500 9.5px/1 var(--sans); letter-spacing: .14em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lbl.on .tag { opacity: 1; transform: none; transition: opacity 180ms linear 40ms, transform 440ms var(--ease) 40ms; }
+.lbl .meta { font: 500 9.5px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: #9ea6b2; font-variant-numeric: tabular-nums; }
+.lbl .row { display: flex; align-items: baseline; gap: 12px; }
+.lbl b { font: 500 15px/1.15 var(--sans); letter-spacing: -.005em; color: #fff; }
+.lbl .price {
+  font: 600 15px/1.15 var(--sans); color: #fff; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 4px rgba(160, 196, 255, .95), 0 0 11px rgba(100, 155, 255, .8), 0 0 24px rgba(80, 135, 255, .5);
+}
 body.focused .lbl { opacity: 0 !important; }
+/* the footer hint steps aside while a tag is up, and comes back a moment after (no flicker between pairs) */
+body.hovering .bottom .hint { opacity: 0; transition-delay: 0ms; }
+.bottom .hint { transition-delay: 600ms; }
 
 /* ------------------------------------------------------------------ product (desktop) */
 .product { position: fixed; inset: 0; z-index: 15; pointer-events: none; visibility: hidden; }
@@ -307,6 +356,8 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
   .actions { gap: 14px; }
   .bottom { display: none; }
   .r-cap { top: auto; bottom: 62px; }
+  .r-sound { bottom: 17px; }
+  .actions { gap: 10px; }
   .r-loc { top: calc(var(--top) / 2 - 5px); }
   .r-logo { top: calc(var(--top) / 2 - 7.5px); }
   html.intro .walkbar { opacity: 0; transform: translateY(16px); }

@@ -1,4 +1,5 @@
 // Real-time checks of the loader hand-off: normal, skip, reduced motion, repeat visit, deep link, no WebGL.
+// A first visit opens on the box, which waits for a tap: these press Enter to open it (tools/gate.js tests the box itself).
 // usage: node tools/live.js <url> <outdir>
 const puppeteer = require('puppeteer-core');
 const m = require('@sparticuz/chromium'); const chromium = m.default || m;
@@ -21,11 +22,19 @@ fs.mkdirSync(out, { recursive: true });
     if (opts.nogl) await p.evaluateOnNewDocument(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return t === 'webgl2' ? null : g.call(this, t, ...a); }; });
     return { p, ctx };
   };
+  // the box on a first visit: open it the way a keyboard user would
+  const openBox = async (p, name) => {
+    await p.waitForSelector('#reel.gate', { timeout: 15000 });
+    await sleep(300);
+    await p.keyboard.press('Enter');
+    logs.push(`[${name}] opened the box`);
+  };
   // 1. normal
   {
     const { p, ctx } = await page('normal');
     const t0 = Date.now();
     await p.goto(url + '?lang=en', { waitUntil: 'domcontentloaded' });
+    await openBox(p, 'normal');
     await sleep(700); await p.screenshot({ path: `${out}/n-0700.png` });
     await sleep(900); await p.screenshot({ path: `${out}/n-1600.png` });
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
@@ -42,7 +51,10 @@ fs.mkdirSync(out, { recursive: true });
   {
     const { p, ctx } = await page('skip');
     await p.goto(url + '?lang=en', { waitUntil: 'domcontentloaded' });
-    await sleep(900);
+    await openBox(p, 'skip');
+    // keys are ignored while the lid is coming off (half a second); skip once the cuts run
+    await p.waitForFunction(() => { const r = document.querySelector('#reel'); return r && !r.classList.contains('opening'); }, { timeout: 30000 });
+    await sleep(400);
     const t0 = Date.now();
     await p.keyboard.press('Escape');
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
@@ -53,7 +65,8 @@ fs.mkdirSync(out, { recursive: true });
   {
     const { p, ctx } = await page('reduced', { reduced: true });
     await p.goto(url + '?lang=en', { waitUntil: 'domcontentloaded' });
-    await sleep(400); await p.screenshot({ path: `${out}/r-0400.png` });
+    await openBox(p, 'reduced');
+    await sleep(1200); await p.screenshot({ path: `${out}/r-1200.png` });
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
     await sleep(1200); await p.screenshot({ path: `${out}/r-end.png` });
     logs.push('[reduced] ' + JSON.stringify(await state(p)));
@@ -72,6 +85,7 @@ fs.mkdirSync(out, { recursive: true });
   {
     const { p, ctx } = await page('nogl', { nogl: true });
     await p.goto(url + '?lang=en', { waitUntil: 'domcontentloaded' });
+    await openBox(p, 'nogl');
     await p.waitForFunction(() => !document.querySelector('#reel'), { timeout: 30000 });
     await sleep(800); await p.screenshot({ path: `${out}/g-end.png` });
     logs.push('[nogl] ' + JSON.stringify(await state(p)));
