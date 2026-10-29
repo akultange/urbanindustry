@@ -1,4 +1,5 @@
 import { createScene } from './scene.js';
+import { createReel } from './reel.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -15,7 +16,7 @@ const pad2 = n => String(n).padStart(2, '0');
 const T = {
   ka: {
     skip: 'წყვილების სიაზე გადასვლა', navWall: 'კედელი', navAbout: 'ჩვენ შესახებ', bag: 'კალათა',
-    kicker: 'თბილისი — მიწოდება მთელ მსოფლიოში', h1: 'აანთე შენი წყვილი.',
+    h1: 'Urban Industry — სნიკერები თბილისიდან',
     status: 'კედელი 01 / 10 წყვილი', hint: 'გადაატარე კურსორი — აინთება. დააჭირე — ჩამოიღე თაროდან.', hintTouch: 'გადაუყევი კედელს. შეეხე წყვილს.',
     pNote: 'კედელი 01 / ფეხსაცმელი', chooseSize: 'აირჩიე ზომა', orderDirect: 'შეკვეთა Direct-ში', pickSize: 'ჯერ ზომა აირჩიე',
     sizeReady: s => `ზომა ${s} · შეკვეთა დაკოპირდება`, addBag: 'კალათაში დამატება', fromFeed: 'ჩვენი გვერდიდან',
@@ -34,7 +35,7 @@ const T = {
   },
   en: {
     skip: 'Skip to the pairs', navWall: 'Wall', navAbout: 'About', bag: 'Bag',
-    kicker: 'Tbilisi — Worldwide shipping', h1: 'Light up your pair.',
+    h1: 'Urban Industry — sneakers from Tbilisi',
     status: 'Wall 01 / 10 pairs', hint: 'Hover to light it. Click to take it off the shelf.', hintTouch: 'Swipe along the wall. Tap a pair.',
     pNote: 'Wall 01 / Footwear', chooseSize: 'Choose your size', orderDirect: 'Order in Direct', pickSize: 'Pick your size first',
     sizeReady: s => `EU ${s} · your order gets copied`, addBag: 'Add to bag', fromFeed: 'From our feed',
@@ -65,9 +66,6 @@ function applyLang() {
   document.title = t('title');
   $$('[data-i18n]').forEach(el => { const v = t(el.dataset.i18n); if (typeof v === 'string') el.textContent = v; });
   $$('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
-  // headline wipe
-  const h1 = $('#h1');
-  h1.innerHTML = `<span class="reveal">${t('h1')}</span>`;
   buildLabels(); buildList();
   if (current >= 0) fillProduct(current);
   renderBag(); updateWalkbar(true);
@@ -99,8 +97,6 @@ async function copy(text) {
 const canvas = $('#gl');
 let phone = phoneQ.matches;
 let scene = null;
-try { scene = createScene(canvas, { catalog, tier: phone ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay }); } catch (e) { console.error(e); scene = null; }
-if (!scene) html.classList.add('no-gl');
 
 // ---------------------------------------------------------------- labels (desktop, shown for the lit shelf)
 const labelsEl = $('#labels');
@@ -385,34 +381,125 @@ setInterval(() => updateWalkbar(false), 120);
 
 // ---------------------------------------------------------------- textures: low-res first, sharp ones later
 const hiDone = new Set();
+async function loadBitmap(src, forGL = true) {
+  // decode off the main thread (premultiplied once for the GPU); fall back to <img> where unsupported
+  try {
+    const blob = await fetch(src).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); });
+    return await createImageBitmap(blob, forGL ? { premultiplyAlpha: 'premultiply', colorSpaceConversion: 'none' } : {});
+  } catch (e) { return loadImage(src); }
+}
 function hiRes(i) {
   if (!scene || hiDone.has(i)) return;
   hiDone.add(i);
-  loadImage(img(pairs[i].id, 1024)).then(im => scene.setShoeImage(i, im)).catch(() => hiDone.delete(i));
+  loadBitmap(img(pairs[i].id, 1024)).then(im => scene.setShoeImage(i, im, true)).catch(() => hiDone.delete(i));
 }
+function noGL() {
+  scene = null; html.classList.add('no-gl'); html.classList.remove('loading', 'intro'); buildList(); route(false);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ANCHOR = Math.max(0, pairs.findIndex(p => p.id === 'dunk'));
+
 async function boot() {
   applyLang();
-  if (!scene) { html.classList.remove('loading'); return; }
-  const margins = () => {
-    const ib = $('.intro').getBoundingClientRect();
-    scene.setMargins(Math.round(ib.bottom + 26), 84);
-  };
-  margins();
-  scene.layout(phone ? 'walk' : 'wall');
+  const params = new URLSearchParams(location.search);
+  const capture = params.has('capture');
+  const saveData = navigator.connection && navigator.connection.saveData;
+  let seen = false; try { seen = sessionStorage.getItem('ui.reel') === '1'; sessionStorage.setItem('ui.reel', '1'); } catch (e) {}
+  const deep = /^#\/p\//.test(location.hash);
+  const reelEl = $('#reel');
+  let reel = null;
+  if (reelEl && !params.has('noreel') && !saveData) {
+    reel = createReel({ root: reelEl, lang, phone, reduced, short: seen || deep || params.has('short'), anchorIndex: ANCHOR, pairs });
+    html.classList.add('intro');
+    addEventListener('resize', () => reel && reel.resize());
+    const skip = e => { if (reel && (e.type !== 'keydown' || ['Escape', 'Enter', ' '].includes(e.key))) reel.skip(); };
+    reelEl.addEventListener('pointerdown', skip);
+    addEventListener('keydown', skip);
+  } else reelEl?.remove();
+
+  // what the reel needs first: the pair it is built around
+  let loaded = 0; const total = pairs.length + 4;
+  const tickLoad = () => reel && reel.progress(++loaded / total * 100);
+  const anchorP = loadBitmap(img(pairs[ANCHOR].id, 1024)).then(b => { reel?.set('anchor', b); tickLoad(); return b; }).catch(() => null);
+  if (reel) {
+    for (const [k, src] of [['lines', `${ASSET}reel/dunk-lines.webp`], ['held', `${ASSET}reel/held.webp`], ['box', `${ASSET}reel/box.webp`]]) {
+      loadBitmap(src, false).then(b => { reel.set(k, b); tickLoad(); }).catch(tickLoad);
+    }
+  }
+  const bitmaps = [];
+  const lo = Promise.allSettled(pairs.map((p, i) => loadBitmap(img(p.id, 512)).then(b => { bitmaps[i] = b; reel?.set('pair', b, i); scene?.setShoeImage(i, b, false); tickLoad(); })));
+
+  // let the first frame paint before the GPU work starts
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  try { scene = createScene(canvas, { catalog, tier: phone ? 'mid' : 'high', reducedMotion: reduced, onFrame: syncOverlay, manual: capture }); } catch (e) { console.error(e); scene = null; }
+  bitmaps.forEach((b, i) => b && scene && scene.setShoeImage(i, b, false));
+  const margins = () => { const top = $('.top').getBoundingClientRect(); scene && scene.setMargins(Math.round(top.bottom + 30), 84); };
+  const sceneReady = (async () => {
+    if (!scene) throw new Error('no webgl');
+    margins();
+    scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR });
+    await scene.ready;
+    scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR });
+    await lo;
+  })();
+  let sceneOk = null;
+  // warm the GPU up under the reel: the sharp anchor layer, its mips, the first draw
+  const warmed = sceneReady.then(async () => {
+    sceneOk = true;
+    if (reel && !reduced) {
+      const b = await anchorP;
+      if (b) { scene.setShoeImage(ANCHOR, b, true); hiDone.add(ANCHOR); }
+      scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce();
+    }
+  }, () => { sceneOk = false; });
+
+  // capture mode (tools/reel_video.js): everything loaded, the script drawn by hand
+  if (capture && reel) {
+    await anchorP; await sceneReady; await Promise.allSettled([document.fonts.ready]);
+    await new Promise(r => { const k = setInterval(() => { if (loaded >= total) { clearInterval(k); r(); } }, 50); });
+    reel.prepare();
+    window.__cap = { reel, scene, land: () => { const b = bitmaps[ANCHOR]; scene.resize(); scene.introShot(ANCHOR, reel.anchorRect()); scene.renderOnce(); reel.land(); html.classList.add('ready'); html.classList.remove('loading', 'intro'); scene.reveal(); } };
+    anchorP.then(b => b && scene.setShoeImage(ANCHOR, b, true));
+    return;
+  }
+  // the reel starts once its pair is decoded (or after a short wait on a slow line)
+  if (reel) {
+    await Promise.race([anchorP, sleep(1600)]);
+    try { await Promise.race([document.fonts.ready, sleep(500)]); } catch (e) {}
+    // the first frame holds while the GPU warms up (so the cuts don't stutter), then the cuts run
+    reel.prime();
+    await Promise.race([warmed, sleep(1400)]);
+    await reel.play();
+    if (sceneOk === null) { reel.hold(); await Promise.race([sceneReady.catch(() => {}), sleep(6000)]); }
+  }
+  try { await sceneReady; } catch (e) { reel?.land({ fade: true }); return noGL(); }
+
+  // the match cut: put the same pair on the same spot of the real wall, then pull back
+  const anchorBmp = await anchorP;
+  if (anchorBmp) { scene.setShoeImage(ANCHOR, anchorBmp, true); hiDone.add(ANCHOR); }
+  scene.resize();
+  if (reel && !reduced) {
+    scene.introShot(ANCHOR, reel.anchorRect());
+    scene.renderOnce();
+    reel.land();
+  } else {
+    html.classList.add('fade-in');
+    reel?.land({ fade: true });
+  }
+  html.classList.add('ready', 'revealing'); html.classList.remove('loading', 'intro');
+  setTimeout(() => html.classList.remove('revealing'), 2600);
   addEventListener('resize', () => {
     const was = phone; phone = phoneQ.matches;
     margins();
-    if (was !== phone) { close({ push: false }); scene.layout(phone ? 'walk' : 'wall'); updateWalkbar(true); }
+    if (was !== phone) { close({ push: false }); scene.layout(phone ? 'walk' : 'wall', { start: ANCHOR }); updateWalkbar(true); }
     else scene.resize();
   });
-  document.fonts?.ready.then(() => { margins(); if (current < 0) scene.resize(); });
-  const lo = await Promise.allSettled(pairs.map((p, i) => loadImage(img(p.id, 512)).then(im => scene.setShoeImage(i, im))));
-  html.classList.add('ready'); html.classList.remove('loading');
-  scene.wake(3000);
+  document.fonts?.ready.then(() => { margins(); if (current < 0 && !scene.state.held) scene.resize(); });
+  route(false);
+  scene.reveal({ instant: !reel || reduced });
   updateWalkbar(true);
   const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
-  if (!phone) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 1200 + i * 120)));
-  route(false);
+  if (!phone && !scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 2200 + i * 140)));
 }
 function route(push) {
   const m = location.hash.match(/^#\/p\/([\w-]+)/);
@@ -421,4 +508,4 @@ function route(push) {
 }
 addEventListener('popstate', () => route(false));
 boot();
-window.__ui = { scene, pairs, open, close };
+window.__ui = { get scene() { return scene; }, pairs, open, close };

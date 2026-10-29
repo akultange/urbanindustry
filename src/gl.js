@@ -27,6 +27,29 @@ export function program(gl, vs, fs, label) {
   return { p, u, label };
 }
 
+// Two-phase variant: start compiling (no status queries, so the driver can work in parallel),
+// finish later once KHR_parallel_shader_compile says it's done.
+export function startProgram(gl, vs, fs, label) {
+  const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const v = mk(gl.VERTEX_SHADER, vs), f = mk(gl.FRAGMENT_SHADER, fs);
+  const p = gl.createProgram();
+  gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+  return { p, v, f, label };
+}
+export function finishProgram(gl, x) {
+  if (!gl.getProgramParameter(x.p, gl.LINK_STATUS)) {
+    const log = (gl.getShaderInfoLog(x.v) || '') + (gl.getShaderInfoLog(x.f) || '') + (gl.getProgramInfoLog(x.p) || '');
+    throw new Error(`[${x.label}] ${log}`);
+  }
+  const u = {};
+  const n = gl.getProgramParameter(x.p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const info = gl.getActiveUniform(x.p, i);
+    u[info.name.replace(/\[0\]$/, '')] = gl.getUniformLocation(x.p, info.name);
+  }
+  return { p: x.p, u, label: x.label };
+}
+
 export function vao(gl, prog, attribs, indices) {
   const v = gl.createVertexArray();
   gl.bindVertexArray(v);
@@ -133,9 +156,25 @@ export const m4 = {
   },
 };
 
+// CSS-style cubic-bezier(x1, y1, x2, y2) as an easing function
+export function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = t => ((ax * t + bx) * t + cx) * t, Y = t => ((ay * t + by) * t + cy) * t, dX = t => (3 * ax * t + 2 * bx) * t + cx;
+  return x => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 6; i++) { const d = dX(t); if (Math.abs(d) < 1e-6) break; t -= (X(t) - x) / d; }
+    if (t < 0 || t > 1 || Math.abs(X(t) - x) > 1e-4) { let lo = 0, hi = 1; t = x; for (let i = 0; i < 30; i++) { if (X(t) < x) lo = t; else hi = t; t = (lo + hi) / 2; } }
+    return Y(t);
+  };
+}
+
 export const ease = {
   outExpo: t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
   inOutCubic: t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
   inOutQuint: t => (t < 0.5 ? 16 * t ** 5 : 1 - Math.pow(-2 * t + 2, 5) / 2),
   outQuart: t => 1 - Math.pow(1 - t, 4),
+  outCubic: t => 1 - Math.pow(1 - t, 3),
+  smoother: t => t * t * t * (t * (t * 6 - 15) + 10),
 };

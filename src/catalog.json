@@ -55,6 +55,47 @@
    "base": 0.012
   },
   {
+   "id": "gg",
+   "brand": "Golden Goose",
+   "model": "Ball Star",
+   "color": {
+    "ka": "მუქი ლურჯი ბრჭყვიალა / თეთრი ვარსკვლავი",
+    "en": "Navy glitter / White star"
+   },
+   "desc": {
+    "ka": "ბრჭყვიალა ზედაპირი, ტყავის ვარსკვლავი, ხელით დაძველებული ძირი.",
+    "en": "Navy glitter, a leather star and a hand-aged sole."
+   },
+   "price": 299,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "soldOut": [
+    42
+   ],
+   "photos": [
+    {
+     "src": "fb012",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.3375,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
    "id": "dunk",
    "brand": "Nike",
    "model": "Dunk Low",
@@ -97,47 +138,6 @@
    ],
    "rect": [
     0.04,
-    0.0578,
-    0.96,
-    0.9875
-   ],
-   "base": 0.012
-  },
-  {
-   "id": "gg",
-   "brand": "Golden Goose",
-   "model": "Ball Star",
-   "color": {
-    "ka": "მუქი ლურჯი ბრჭყვიალა / თეთრი ვარსკვლავი",
-    "en": "Navy glitter / White star"
-   },
-   "desc": {
-    "ka": "ბრჭყვიალა ზედაპირი, ტყავის ვარსკვლავი, ხელით დაძველებული ძირი.",
-    "en": "Navy glitter, a leather star and a hand-aged sole."
-   },
-   "price": 299,
-   "sizes": [
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43
-   ],
-   "soldOut": [
-    42
-   ],
-   "photos": [
-    {
-     "src": "fb012",
-     "w": 720,
-     "h": 960
-    }
-   ],
-   "rect": [
-    0.04,
     0.3375,
     0.96,
     0.9875
@@ -149,8 +149,8 @@
    "brand": "Salomon",
    "model": "XT-6",
    "color": {
-    "ka": "თეთრი / ნაცრისფერი",
-    "en": "White / Lunar Rock"
+    "ka": "თეთრი / ქლიავისფერი",
+    "en": "White / Plum"
    },
    "desc": {
     "ka": "ულტრა მარათონისთვის შექმნილი, ქალაქში სატარებელი.",
@@ -196,7 +196,7 @@
    ],
    "rect": [
     0.04,
-    0.0906,
+    0.3063,
     0.96,
     0.9875
    ],

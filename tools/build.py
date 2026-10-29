@@ -1,6 +1,6 @@
 """Build dist/: bundle JS with esbuild, subset + inline fonts, inline CSS/catalog into index.html,
 copy assets. usage: python3 tools/build.py [public_base_url]"""
-import os, sys, json, shutil, subprocess, base64, io, hashlib
+import os, sys, re, json, shutil, subprocess, base64, io, hashlib
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
@@ -31,29 +31,49 @@ def fonts():
     fs = {}
     ka = os.path.join(NM, '@fontsource-variable/noto-sans-georgian/files/noto-sans-georgian-georgian-wdth-normal.woff2')
     ka_ext = os.path.join(NM, '@fontsource-variable/noto-sans-georgian/files/noto-sans-georgian-latin-ext-wdth-normal.woff2')
+    rb = os.path.join(NM, '@fontsource-variable/rubik/files/rubik-latin-wght-normal.woff2')
     it = os.path.join(NM, '@fontsource-variable/inter-tight/files/inter-tight-latin-wght-normal.woff2')
-    jb = os.path.join(NM, '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2')
-    rb = os.path.join(NM, '@fontsource/rubik/files/rubik-latin-500-normal.woff2')
     mkhedruli = list(range(0x10D0, 0x1100))
+    latin = list(range(0x20, 0x7F)) + [0xA0, 0xB7, 0xD7, 0xE7, 0xE9, 0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2026, 0x2032]
+    # (data, unicode-range, family, weight range, stretch?)
     fs['nsg'] = (font_subset(ka, unicodes=mkhedruli + [0x20, 0x2D, 0x2014, 0x201E, 0x201C, 0x2026]), 'U+10D0-10FF, U+201E, U+201C', 'NSG', '100 900', True)
     fs['lari'] = (font_subset(ka_ext, unicodes=[0x20BE]), 'U+20BE', 'NSG', '100 900', True)
-    fs['it'] = (font_subset(it, unicodes=list(range(0x20, 0x7F)) + [0xA0, 0xD7, 0x2013, 0x2014, 0x2018, 0x2019, 0x201C, 0x201D, 0x2026, 0x2190, 0x2192, 0x2197, 0x2032, 0xE7]),
-                'U+0020-007E, U+00A0, U+00D7, U+00E7, U+2013-201D, U+2026, U+2190-2197, U+2032', 'IT', '100 900', True)
-    fs['jbm'] = (font_subset(jb, unicodes=list(range(0x20, 0x7F)) + [0xD7, 0x2192, 0x2190, 0x2197]), 'U+0020-007E, U+00D7, U+2190-2197', 'JBM', '500', False)
-    fs['rb'] = (font_subset(rb, text='Urban Industry'), 'U+0020, U+0055, U+0049, U+0061-007A', 'RB', '500', False)
+    fs['rb'] = (font_subset(rb, unicodes=latin), 'U+0020-007E, U+00A0, U+00B7, U+00D7, U+00E7, U+00E9, U+2013-201D, U+2026, U+2032', 'RB', '300 900', False)
+    # Rubik has no arrows: borrow them from Inter Tight
+    fs['arw'] = (font_subset(it, unicodes=[0x2190, 0x2191, 0x2192, 0x2193, 0x2196, 0x2197, 0x2198]), 'U+2190-2198', 'IT', '100 900', False)
     css = []
     preload = []
     os.makedirs(os.path.join(DIST, 'assets', 'fonts'), exist_ok=True)
-    for k, (data, rng, fam, weight, var) in fs.items():
+    for k, (data, rng, fam, weight, stretch) in fs.items():
         h = hashlib.md5(data).hexdigest()[:8]
         name = f'{k}.{h}.woff2'
         open(os.path.join(DIST, 'assets', 'fonts', name), 'wb').write(data)
-        stretch = 'font-stretch: 62.5% 100%;' if k in ('nsg', 'lari') else ''
-        css.append(f"@font-face{{font-family:'{fam}';src:url(assets/fonts/{name}) format('woff2');font-weight:{weight};{stretch}font-display:swap;unicode-range:{rng}}}")
-        if k in ('nsg', 'it', 'rb'):
+        st = 'font-stretch: 62.5% 100%;' if stretch else ''
+        css.append(f"@font-face{{font-family:'{fam}';src:url(assets/fonts/{name}) format('woff2');font-weight:{weight};{st}font-display:swap;unicode-range:{rng}}}")
+        if k in ('nsg', 'rb'):
             preload.append(f'<link rel="preload" href="assets/fonts/{name}" as="font" type="font/woff2" crossorigin>')
         print(f'  font {k:5s} {len(data) / 1024:6.1f} KB')
     return '\n'.join(css), preload
+
+
+def logo():
+    """Their wordmark as inline SVG for the header, and a favicon from its first letter."""
+    L = json.load(open(os.path.join(SRC, 'logo.json')))
+    svg = f'<svg class="logo" viewBox="0 0 {L["w"]} {L["h"]}" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="{L["d"]}"/></svg>'
+    # the "U": subpaths whose points all sit in the first ~11% of the width
+    subs = re.findall(r'M[^M]*', L['d'])
+    def xs(p): return [float(m[0]) for m in re.findall(r'(-?\d+\.?\d*)\s+(-?\d+\.?\d*)', p)]
+    u = ''.join(p for p in subs if max(xs(p)) < L['w'] * 0.11)
+    pts = [tuple(map(float, m)) for m in re.findall(r'(-?\d+\.?\d*)\s+(-?\d+\.?\d*)', u)]
+    x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
+    y0, y1 = min(p[1] for p in pts), max(p[1] for p in pts)
+    size = max(x1 - x0, y1 - y0) / 0.6
+    vb = f'{(x0 + x1) / 2 - size / 2:.2f} {(y0 + y1) / 2 - size / 2:.2f} {size:.2f} {size:.2f}'
+    r = size * 0.22
+    fav = (f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='{vb}'><rect x='{(x0 + x1) / 2 - size / 2:.2f}' y='{(y0 + y1) / 2 - size / 2:.2f}' width='{size:.2f}' height='{size:.2f}' rx='{r:.2f}' fill='#a2c1f0'/>"
+           f"<path fill='#fff' fill-rule='evenodd' d='{u}'/></svg>")
+    from urllib.parse import quote
+    return svg, 'data:image/svg+xml,' + quote(fav, safe=" =:/'")
 
 
 def main():
@@ -62,7 +82,7 @@ def main():
     print('fonts')
     font_css, preload = fonts()
     # assets
-    for d in ('shoes', 'photos', 'img'):
+    for d in ('shoes', 'photos', 'img', 'reel'):
         s = os.path.join(ROOT, 'assets', d)
         if os.path.isdir(s): shutil.copytree(s, os.path.join(DIST, 'assets', d))
     # js
@@ -72,12 +92,17 @@ def main():
     css = subprocess.run([os.path.join(NM, '.bin', 'esbuild'), '--loader=css', '--minify'], input=css, capture_output=True, text=True, check=True).stdout
     cat = json.load(open(os.path.join(SRC, 'catalog.json')))
     html = open(os.path.join(SRC, 'index.html')).read()
-    shoes = [f'<link rel="preload" href="assets/shoes/{p["id"]}-512.webp" as="image" fetchpriority="high">' for p in cat['pairs'][:5]]
-    fav = "data:image/svg+xml," + "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='5' fill='%23a2c1f0'/%3E%3Cpath d='M7.4 6.6v6.1a4.6 4.6 0 0 0 9.2 0V6.6' fill='none' stroke='%230c1424' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E"
+    # everything here is read with fetch() + createImageBitmap, so preload as fetch (not image)
+    pre = lambda href, hi=False: f'<link rel="preload" href="{href}" as="fetch" crossorigin{" fetchpriority=" + chr(34) + "high" + chr(34) if hi else ""}>'
+    anchor = next(p for p in cat['pairs'] if p['id'] == 'dunk')
+    shoes = [pre(f'assets/shoes/{anchor["id"]}-1024.webp', True)]
+    shoes += [pre(f'assets/shoes/{p["id"]}-512.webp') for p in cat['pairs']]
+    shoes += [pre(f'assets/reel/{n}.webp') for n in ('dunk-lines', 'held', 'box')]
+    logo_svg, fav = logo()
     og = (PUBLIC.rstrip('/') + '/' if PUBLIC else '') + 'assets/img/og.jpg'
     html = (html.replace('%CSS%', css).replace('%JS%', js.replace('</script', '<\\/script'))
             .replace('%CATALOG%', json.dumps(cat, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'))
-            .replace('%PRELOAD%', '\n'.join(preload + shoes)).replace('%FAVICON%', fav).replace('%OG_IMAGE%', og))
+            .replace('%PRELOAD%', '\n'.join(preload + shoes)).replace('%FAVICON%', fav).replace('%OG_IMAGE%', og).replace('%LOGO%', logo_svg))
     open(os.path.join(DIST, 'index.html'), 'w').write(html)
     open(os.path.join(DIST, '.nojekyll'), 'w').write('')
     sz = lambda p: os.path.getsize(p)

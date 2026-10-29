@@ -6,7 +6,7 @@
 <title>Urban Industry — სნიკერები, თბილისი</title>
 <meta name="description" content="Urban Industry — sneaker store from Tbilisi. Light up a pair on our wall, pick your size, order in Direct. Worldwide shipping.">
 <meta name="theme-color" content="#0b0c0e">
-<meta property="og:title" content="Urban Industry — light up your pair">
+<meta property="og:title" content="Urban Industry — the wall">
 <meta property="og:description" content="Ten pairs on our wall. Pick one, choose your size, order in Direct.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="%OG_IMAGE%">
@@ -18,11 +18,24 @@
 <body>
 <a class="skip" href="#pairs-list" data-i18n="skip">Skip to the pairs</a>
 
+<!-- loader: a fast-cut reel around one pair, then a match cut onto the wall -->
+<div id="reel" class="reel" data-tone="w">
+  <canvas aria-hidden="true"></canvas>
+  <div class="reel-hud" aria-hidden="true">
+    <span class="r-logo">%LOGO%</span>
+    <span class="r-cap" data-hud="cap">Nike Dunk Low</span>
+    <span class="r-loc" data-hud="loc">Tbilisi — Worldwide</span>
+    <span class="r-pct" data-hud="pct"></span>
+  </div>
+  <button type="button" class="r-skip" data-hud="skip">Skip</button>
+</div>
+<noscript><style>.reel { display: none !important; }</style></noscript>
+
 <canvas id="gl" aria-hidden="true"></canvas>
 <div id="veil" aria-hidden="true"></div>
 
 <header class="top">
-  <a class="brand" href="#/" aria-label="Urban Industry"><span class="wordmark">Urban Industry</span></a>
+  <a class="brand" href="#/" aria-label="Urban Industry">%LOGO%</a>
   <nav class="nav" aria-label="Main">
     <button type="button" class="nav-wall is-on" data-go="wall"><span data-i18n="navWall">Wall</span><sup>10</sup></button>
     <button type="button" class="nav-about" data-go="about" data-i18n="navAbout">About</button>
@@ -33,10 +46,7 @@
   </div>
 </header>
 
-<section class="intro" aria-labelledby="h1">
-  <p class="kicker" data-i18n="kicker">Tbilisi — Worldwide shipping</p>
-  <h1 id="h1" data-i18n="h1">Light up your pair.</h1>
-</section>
+<h1 class="sr-only" id="h1" data-i18n="h1">Urban Industry — sneakers from Tbilisi</h1>
 
 <div id="labels" aria-hidden="true"></div>
 
@@ -56,7 +66,7 @@
     <p class="kicker p-note" data-i18n="pNote">Wall 01 / Footwear</p>
     <div class="p-head"><p class="p-color" id="p-color"></p><p class="p-price" id="p-price"></p></div>
     <div class="p-sizes">
-      <div class="p-sizes-top"><span data-i18n="chooseSize">Choose your size</span><span class="mono">EU</span></div>
+      <div class="p-sizes-top"><span data-i18n="chooseSize">Choose your size</span><span class="unit">EU</span></div>
       <div class="sizes" id="sizes" role="radiogroup" aria-labelledby="p-title"></div>
     </div>
     <a class="cta" id="order" href="https://ig.me/m/urbanindustry_" target="_blank" rel="noopener" aria-disabled="true">
@@ -92,7 +102,7 @@
 </section>
 
 <footer class="bottom">
-  <p class="status"><i class="live"></i><span class="mono" data-i18n="status">Wall 01 / 10 pairs</span></p>
+  <p class="status"><i class="live"></i><span data-i18n="status">Wall 01 / 10 pairs</span></p>
   <p class="hint"><span class="hint-desk" data-i18n="hint">Hover to light it. Click to take it off the shelf.</span><span class="hint-touch" data-i18n="hintTouch">Swipe along the wall. Tap a pair.</span></p>
   <a class="ig" href="https://www.instagram.com/urbanindustry_/" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>
 </footer>
@@ -120,15 +130,15 @@
     <p class="lead" data-i18n="aboutLead">A sneaker store from Tbilisi with 144K people on Instagram. We ship worldwide.</p>
     <p data-i18n="aboutText">Every pair here comes straight from our feed. Pick one, choose your size and finish the order with us in Direct — we confirm stock, price and delivery right there.</p>
     <ol class="steps">
-      <li><span class="mono">01</span><span data-i18n="step1">Pick a pair and your size.</span></li>
-      <li><span class="mono">02</span><span data-i18n="step2">Tap “Order in Direct” — your order is copied.</span></li>
-      <li><span class="mono">03</span><span data-i18n="step3">Paste it in the chat. We confirm and ship.</span></li>
+      <li><span class="num">01</span><span data-i18n="step1">Pick a pair and your size.</span></li>
+      <li><span class="num">02</span><span data-i18n="step2">Tap “Order in Direct” — your order is copied.</span></li>
+      <li><span class="num">03</span><span data-i18n="step3">Paste it in the chat. We confirm and ship.</span></li>
     </ol>
     <ul class="links">
-      <li><a href="https://www.instagram.com/urbanindustry_/" target="_blank" rel="noopener">Instagram <span class="mono">@urbanindustry_</span> ↗</a></li>
-      <li><a href="https://www.tiktok.com/@urban.industry" target="_blank" rel="noopener">TikTok <span class="mono">@urban.industry</span> ↗</a></li>
-      <li><a href="https://www.facebook.com/profile.php?id=100064212606482" target="_blank" rel="noopener">Facebook <span class="mono">Urban Industry</span> ↗</a></li>
-      <li><a href="https://www.instagram.com/urbanindustrybag/" target="_blank" rel="noopener"><span data-i18n="bags">Bags</span> <span class="mono">@urbanindustrybag</span> ↗</a></li>
+      <li><a href="https://www.instagram.com/urbanindustry_/" target="_blank" rel="noopener">Instagram <span class="handle">@urbanindustry_</span> ↗</a></li>
+      <li><a href="https://www.tiktok.com/@urban.industry" target="_blank" rel="noopener">TikTok <span class="handle">@urban.industry</span> ↗</a></li>
+      <li><a href="https://www.facebook.com/profile.php?id=100064212606482" target="_blank" rel="noopener">Facebook <span class="handle">Urban Industry</span> ↗</a></li>
+      <li><a href="https://www.instagram.com/urbanindustrybag/" target="_blank" rel="noopener"><span data-i18n="bags">Bags</span> <span class="handle">@urbanindustrybag</span> ↗</a></li>
     </ul>
     <p class="fine" data-i18n="concept">Concept site by Luka Skhiladze. Prices are indicative.</p>
   </div>
@@ -139,7 +149,7 @@
   <button type="button" class="close" data-close="lightbox" aria-label="Close">×</button>
   <button type="button" class="lb-step lb-prev" id="lb-prev" aria-label="Previous">←</button>
   <button type="button" class="lb-step lb-next" id="lb-next" aria-label="Next">→</button>
-  <p class="lb-count mono" id="lb-count"></p>
+  <p class="lb-count" id="lb-count"></p>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>

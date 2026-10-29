@@ -14,7 +14,10 @@ fs.mkdirSync(out, { recursive: true });
     p.on('pageerror', e => logs.push(`[${name}] pageerror: ${e.message}`));
     await p.setViewport(vp);
     await p.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
-    await sleep(3500);
+    await p.waitForFunction(() => document.documentElement.classList.contains('ready') || document.documentElement.classList.contains('no-gl'), { timeout: 60000 });
+    // headless GL runs at a few fps: skip the power-on so the shots show the settled wall
+    await p.evaluate(() => { const s = window.__ui.scene; if (s) { s.state.introT = 9; s.wake(1500); } });
+    await sleep(2500);
     await fn(p);
     await p.close();
   };
@@ -29,7 +32,7 @@ fs.mkdirSync(out, { recursive: true });
   if (all.includes('hover')) await run('hover', desk, async p => {
     const r = await p.evaluate(() => { const s = window.__ui.scene; const q = s.shoeScreenRect(2); return q; });
     await p.mouse.move((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, { steps: 6 });
-    await sleep(900);
+    await sleep(2600);
     await p.screenshot({ path: `${out}/hover.png` });
   });
   if (all.includes('focus')) await run('focus', desk, async p => {
@@ -37,9 +40,9 @@ fs.mkdirSync(out, { recursive: true });
     await p.mouse.move((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, { steps: 4 });
     await sleep(300);
     await p.mouse.click((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2);
-    await sleep(450);
+    await sleep(900);
     await p.screenshot({ path: `${out}/focus-mid.png` });
-    await sleep(1600);
+    await sleep(3200);
     await p.screenshot({ path: `${out}/focus.png` });
     const sz = await p.$$('#sizes .size:not(:disabled)');
     if (sz[3]) await sz[3].click();
@@ -53,12 +56,12 @@ fs.mkdirSync(out, { recursive: true });
     await p.touchscreen.touchStart(300, 420);
     for (let i = 1; i <= 8; i++) { await p.touchscreen.touchMove(300 - i * 25, 420); await sleep(16); }
     await p.touchscreen.touchEnd();
-    await sleep(1600);
+    await sleep(3000);
     await p.screenshot({ path: `${out}/phone-swiped.png` });
   });
   if (all.includes('sheet')) await run('sheet', phone, async p => {
     await p.tap('#wb-open');
-    await sleep(1200);
+    await sleep(2600);
     await p.screenshot({ path: `${out}/phone-sheet.png` });
   });
   console.log(logs.join('\n') || 'no console errors');

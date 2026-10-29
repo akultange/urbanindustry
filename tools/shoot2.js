@@ -10,11 +10,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   p.on('pageerror', e => logs.push('pageerror ' + e.message));
   p.on('console', msg => { if (msg.type() === 'error') logs.push('console ' + msg.text()); });
   await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
-  await p.goto(url, { waitUntil: 'networkidle0' }); await sleep(3500);
+  await p.goto(url, { waitUntil: 'networkidle0' });
+  await p.waitForFunction(() => document.documentElement.classList.contains('ready'), { timeout: 60000 });
+  await p.evaluate(() => { const s = window.__ui.scene; s.state.introT = 9; s.wake(1500); });
+  await sleep(2500);
+  await p.screenshot({ path: `${out}/desk-ka.png` });
   await p.mouse.move(720, 450, { steps: 8 }); await sleep(250); await p.mouse.move(560, 470, { steps: 8 }); await sleep(900);
   await p.screenshot({ path: `${out}/cursor.png` });
   // open pair 2, pick size, add to bag, open bag
-  await p.evaluate(() => window.__ui.open(1)); await sleep(1800);
+  await p.evaluate(() => window.__ui.open(2)); await sleep(3500);
+  await p.screenshot({ path: `${out}/focus-ka.png` });
   const sz = await p.$$('#sizes .size:not(:disabled)'); await sz[2].click(); await sleep(200);
   await p.click('#add-bag'); await sleep(300);
   await p.click('#bag-btn'); await sleep(900);
