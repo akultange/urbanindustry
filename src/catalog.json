@@ -1,0 +1,476 @@
+{
+ "pairs": [
+  {
+   "id": "prsx",
+   "brand": "Philippe Model Paris",
+   "model": "PRSX",
+   "color": {
+    "ka": "თეთრი / ვერცხლისფერი",
+    "en": "White / Silver"
+   },
+   "desc": {
+    "ka": "პარიზული კორტის ფეხსაცმელი — ვინტაჟური ძირი და ვერცხლისფერი გერბი.",
+    "en": "Paris court shoe with a pre-aged sole and a silver crest."
+   },
+   "price": 289,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    37,
+    44
+   ],
+   "photos": [
+    {
+     "src": "fb001",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb002",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb003",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.1719,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "dunk",
+   "brand": "Nike",
+   "model": "Dunk Low",
+   "color": {
+    "ka": "მუქი წითელი / თეთრი",
+    "en": "Team Red / White"
+   },
+   "desc": {
+    "ka": "85-ის საკალათბურთო კლასიკა, ორფეროვან ტყავში.",
+    "en": "The ’85 basketball classic in two-tone leather."
+   },
+   "price": 219,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    36,
+    45
+   ],
+   "photos": [
+    {
+     "src": "fb014",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb015",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.0578,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "gg",
+   "brand": "Golden Goose",
+   "model": "Ball Star",
+   "color": {
+    "ka": "მუქი ლურჯი ბრჭყვიალა / თეთრი ვარსკვლავი",
+    "en": "Navy glitter / White star"
+   },
+   "desc": {
+    "ka": "ბრჭყვიალა ზედაპირი, ტყავის ვარსკვლავი, ხელით დაძველებული ძირი.",
+    "en": "Navy glitter, a leather star and a hand-aged sole."
+   },
+   "price": 299,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "soldOut": [
+    42
+   ],
+   "photos": [
+    {
+     "src": "fb012",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.3375,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "xt6",
+   "brand": "Salomon",
+   "model": "XT-6",
+   "color": {
+    "ka": "თეთრი / ნაცრისფერი",
+    "en": "White / Lunar Rock"
+   },
+   "desc": {
+    "ka": "ულტრა მარათონისთვის შექმნილი, ქალაქში სატარებელი.",
+    "en": "Built for ultra trails, worn on city streets."
+   },
+   "price": 259,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    40
+   ],
+   "photos": [
+    {
+     "src": "fb007",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb008",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb009",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb010",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.0906,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "gazelle",
+   "brand": "adidas",
+   "model": "Gazelle Indoor",
+   "color": {
+    "ka": "ვარდისფერი / კაუჩუკის ძირი",
+    "en": "Sandy Pink / Gum"
+   },
+   "desc": {
+    "ka": "ვარდისფერი ზამში, გამჭვირვალე კაუჩუკის ძირზე.",
+    "en": "Pink suede on a translucent gum sole."
+   },
+   "price": 199,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "soldOut": [
+    38
+   ],
+   "photos": [
+    {
+     "src": "fb040",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb041",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.3219,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "nb_brown",
+   "brand": "Miu Miu × New Balance",
+   "model": "530 SL",
+   "color": {
+    "ka": "ყავისფერი ზამში",
+    "en": "Cognac suede"
+   },
+   "desc": {
+    "ka": "Miu Miu-ს 530: ზამში, ბადე და გრძელი თასმები.",
+    "en": "Miu Miu’s take on the 530: suede, mesh, long laces."
+   },
+   "price": 329,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "soldOut": [],
+   "photos": [
+    {
+     "src": "fb091",
+     "w": 720,
+     "h": 900
+    },
+    {
+     "src": "fb092",
+     "w": 720,
+     "h": 901
+    },
+    {
+     "src": "fb095",
+     "w": 720,
+     "h": 900
+    }
+   ],
+   "rect": [
+    0.04,
+    0.4,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "veja",
+   "brand": "VEJA",
+   "model": "V-90",
+   "color": {
+    "ka": "თეთრი / შავი",
+    "en": "Extra White / Black"
+   },
+   "desc": {
+    "ka": "სუფთა ტყავი, ზამშის V და ნატურალური კაუჩუკი.",
+    "en": "Clean leather, a suede V, natural rubber."
+   },
+   "price": 229,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    39,
+    43
+   ],
+   "photos": [
+    {
+     "src": "fb005",
+     "w": 720,
+     "h": 960
+    },
+    {
+     "src": "fb006",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.2828,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "superstar",
+   "brand": "adidas",
+   "model": "Superstar",
+   "color": {
+    "ka": "კრემისფერი / ყავისფერი",
+    "en": "Cream / Brown"
+   },
+   "desc": {
+    "ka": "ნიჟარისებრი ცხვირი, კრემისფერი ტყავი, ყავისფერი ზოლები.",
+    "en": "Shell toe, cream leather, brown suede stripes."
+   },
+   "price": 179,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    41
+   ],
+   "photos": [
+    {
+     "src": "fb004",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.3203,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "mexico",
+   "brand": "Onitsuka Tiger",
+   "model": "Mexico 66 SD",
+   "color": {
+    "ka": "კრემისფერი / ნაცრისფერი",
+    "en": "Birch / Metropolis"
+   },
+   "desc": {
+    "ka": "1966 წლის თხელი სილუეტი, რბილ ძირზე.",
+    "en": "The slim 1966 runner on a cushioned sole."
+   },
+   "price": 219,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "soldOut": [
+    36
+   ],
+   "photos": [
+    {
+     "src": "fb060",
+     "w": 720,
+     "h": 960
+    }
+   ],
+   "rect": [
+    0.04,
+    0.4375,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  },
+  {
+   "id": "nb_cream",
+   "brand": "Miu Miu × New Balance",
+   "model": "530 SL",
+   "color": {
+    "ka": "კრემისფერი ზამში",
+    "en": "Cream suede"
+   },
+   "desc": {
+    "ka": "530 SL კრემისფერ ზამშსა და ბადეში.",
+    "en": "The 530 SL in cream suede and mesh."
+   },
+   "price": 329,
+   "sizes": [
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "soldOut": [
+    37
+   ],
+   "photos": [
+    {
+     "src": "fb092",
+     "w": 720,
+     "h": 901
+    },
+    {
+     "src": "fb091",
+     "w": 720,
+     "h": 900
+    }
+   ],
+   "rect": [
+    0.04,
+    0.4375,
+    0.96,
+    0.9875
+   ],
+   "base": 0.012
+  }
+ ]
+}

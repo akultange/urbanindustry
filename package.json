@@ -1,0 +1,21 @@
+{
+  "name": "urbanindustry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Urban Industry — sneaker wall concept site",
+  "scripts": {
+    "build": "python3 tools/build.py",
+    "build:pages": "OUT=docs python3 tools/build.py https://akultange.github.io/urbanindustry/",
+    "serve": "python3 -m http.server 8765 --directory dist",
+    "qa": "node tools/shoot.js http://127.0.0.1:8765/ qa && node tools/shoot2.js http://127.0.0.1:8765/ qa"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "@fontsource-variable/noto-sans-georgian": "^5.3.0",
+    "@fontsource-variable/inter-tight": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/rubik": "^5.3.0",
+    "puppeteer-core": "^25.16.0",
+    "@sparticuz/chromium": "^153.0.0"
+  }
+}
