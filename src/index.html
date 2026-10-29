@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Urban Industry — სნიკერები, თბილისი</title>
 <meta name="description" content="Urban Industry — sneaker store from Tbilisi. Light up a pair on our wall, pick your size, order in Direct. Worldwide shipping.">
-<meta name="theme-color" content="#0b0c0e">
+<meta name="theme-color" content="#a2c1f0">
 <meta property="og:title" content="Urban Industry — the wall">
 <meta property="og:description" content="Ten pairs on our wall. Pick one, choose your size, order in Direct.">
 <meta property="og:type" content="website">
@@ -117,7 +117,7 @@
 <!-- accessible list of pairs; also the no-WebGL fallback grid -->
 <nav id="pairs-list" class="pairs-list" aria-label="Pairs"></nav>
 
-<aside id="bag" class="drawer" role="dialog" aria-modal="true" aria-labelledby="bag-title" aria-hidden="true">
+<aside id="bag" class="drawer" role="dialog" aria-modal="true" aria-labelledby="bag-title" aria-hidden="true" hidden>
   <div class="drawer-head"><h2 id="bag-title" data-i18n="bagTitle">Your bag</h2><button type="button" class="close" data-close="bag" aria-label="Close">×</button></div>
   <ul class="bag-items" id="bag-items"></ul>
   <p class="bag-empty" id="bag-empty" data-i18n="bagEmpty">Your bag is empty. Light up a pair.</p>
@@ -129,7 +129,7 @@
   </div>
 </aside>
 
-<section id="about" class="about" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true">
+<section id="about" class="about" role="dialog" aria-modal="true" aria-labelledby="about-title" aria-hidden="true" hidden>
   <button type="button" class="close" data-close="about" aria-label="Close">×</button>
   <div class="about-in">
     <p class="kicker" data-i18n="aboutKicker">Urban Industry / Tbilisi</p>
@@ -151,7 +151,7 @@
   </div>
 </section>
 
-<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Photo">
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Photo" hidden>
   <img id="lb-img" alt="">
   <button type="button" class="close" data-close="lightbox" aria-label="Close">×</button>
   <button type="button" class="lb-step lb-prev" id="lb-prev" aria-label="Previous">←</button>
@@ -160,6 +160,9 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<!-- the colour Safari gives its top and bottom bars (see .tint in style.css) -->
+<div class="tint tint-top" aria-hidden="true"></div>
+<div class="tint tint-bottom" aria-hidden="true"></div>
 <script type="application/json" id="catalog">%CATALOG%</script>
 <script>%JS%</script>
 </body>

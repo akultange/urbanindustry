@@ -282,17 +282,36 @@ $('#bag-msgr').addEventListener('click', async () => { if (await copy(bagMessage
 
 // ---------------------------------------------------------------- overlays
 let lastFocus = null;
+// The browser's own bars take the page's colour at each edge: Safari 26 from the .tint strips (style.css),
+// Chrome on Android and older Safari from theme-color. While a panel is open, they go dark with it.
+const themeMeta = document.querySelector('meta[name=theme-color]');
+function syncBars() {
+  const layer = !!document.querySelector('.drawer.open, .about.open, .lightbox.open');
+  html.classList.toggle('layer', layer);
+  const live = html.classList.contains('ready') || html.classList.contains('no-gl');
+  const c = !live ? '#a2c1f0' : layer || html.classList.contains('no-gl') ? '#0b0c0e' : phoneQ.matches ? '#1b1c1f' : '#17181b';
+  if (themeMeta && themeMeta.content !== c) themeMeta.content = c;
+}
+// Panels sit out of the page while shut ([hidden]: Safari would read a hidden panel's dark background as the
+// colour for its bars), and come back for their transitions.
 function openLayer(id) {
   lastFocus = document.activeElement;
-  const el = $('#' + id); el.classList.add('open'); el.setAttribute('aria-hidden', 'false');
+  const el = $('#' + id);
+  clearTimeout(el._shut);
+  if (el.hidden) { el.hidden = false; void el.offsetWidth; }   // back in the page, then the transition runs
+  el.classList.add('open'); el.setAttribute('aria-hidden', 'false');
   setTimeout(() => el.querySelector('.close')?.focus({ preventScroll: true }), 60);
   if (id === 'about') $$('.nav button').forEach(b => b.classList.toggle('is-on', b.dataset.go === 'about'));
+  syncBars();
 }
 function closeLayer(id) {
   const el = $('#' + id); if (!el.classList.contains('open')) return false;
   el.classList.remove('open'); el.setAttribute('aria-hidden', 'true');
+  clearTimeout(el._shut);
+  el._shut = setTimeout(() => { if (!el.classList.contains('open')) el.hidden = true; }, 600);   // after its fade or slide
   if (id === 'about') $$('.nav button').forEach(b => b.classList.toggle('is-on', b.dataset.go === 'wall'));
   lastFocus?.focus?.({ preventScroll: true });
+  syncBars();
   return true;
 }
 $('#bag-btn').addEventListener('click', () => { renderBag(); openLayer('bag'); });
@@ -415,7 +434,7 @@ function hiRes(i) {
   loadBitmap(img(pairs[i].id, 1024)).then(im => scene.setShoeImage(i, im, true)).catch(() => hiDone.delete(i));
 }
 function noGL() {
-  scene = null; html.classList.add('no-gl'); html.classList.remove('loading', 'intro'); buildList(); route(false);
+  scene = null; html.classList.add('no-gl'); html.classList.remove('loading', 'intro'); buildList(); route(false); syncBars();
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ANCHOR = Math.max(0, pairs.findIndex(p => p.id === 'dunk'));
@@ -585,12 +604,12 @@ async function boot() {
     reel?.land({ fade: true });
   }
   if (reel) sound.land(reduced ? [] : pairs.map((_, k) => 0.55 + k * 0.065));
-  html.classList.add('ready', 'revealing'); html.classList.remove('loading', 'intro');
+  html.classList.add('ready', 'revealing'); html.classList.remove('loading', 'intro'); syncBars();
   setTimeout(() => html.classList.remove('revealing'), 4200);
   addEventListener('resize', () => {
     const was = phone; phone = phoneQ.matches;
     margins();
-    if (was !== phone) { close({ push: false }); scene.layout('wall', { start: ANCHOR }); }
+    if (was !== phone) { close({ push: false }); scene.layout('wall', { start: ANCHOR }); syncBars(); }
     else scene.resize();
   });
   document.fonts?.ready.then(() => { margins(); if (current < 0 && !scene.state.held) scene.resize(); });
@@ -598,8 +617,9 @@ async function boot() {
   scene.reveal({ instant: !matchCut });
   updateWalkbar(true);
   const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
-  // the sharp layers come in once the pull-back is over (uploading them mid-move can drop a frame)
-  if (!phone && !scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 3300 + i * 120)));
+  // the sharp layers come in once the pull-back is over (uploading them mid-move can drop a frame); phones too,
+  // now that they draw at full resolution: the 512 px layers read soft there
+  if (!scene.software) idle(() => pairs.forEach((p, i) => setTimeout(() => hiRes(i), 3300 + i * (phone ? 200 : 120))));
 }
 function route(push) {
   const m = location.hash.match(/^#\/p\/([\w-]+)/);

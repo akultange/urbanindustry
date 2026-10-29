@@ -133,8 +133,7 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
     // halo: the letters at quarter size, blurred tight + wide (the canvas does it on the GPU where it can)
     const h = document.createElement('canvas'); h.width = HW; h.height = HH;
     const q = h.getContext('2d');
-    q.filter = 'blur(1px)';
-    if (q.filter === 'blur(1px)') {
+    if (canvasBlurs()) {
       q.filter = 'none'; q.fillStyle = '#000'; q.fillRect(0, 0, HW, HH);
       q.globalCompositeOperation = 'lighter';
       // thin strokes lose most of their peak when blurred, so the weights are scaled up to match
@@ -142,7 +141,7 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       q.filter = 'blur(16px)'; q.globalAlpha = 0.75; q.drawImage(c, 0, 0, HW, HH); q.drawImage(c, 0, 0, HW, HH);
       haloTex = tex(h, false);
     } else {
-      // no canvas filters (older Safari): the same blur in script, once
+      // no canvas filters (Safari, iPhones): the same blur in script, once
       q.drawImage(c, 0, 0, HW, HH);
       const px = q.getImageData(0, 0, HW, HH).data, small = new Float32Array(HW * HH);
       for (let i = 0; i < small.length; i++) small[i] = px[i * 4] / 255;
@@ -151,6 +150,15 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
       for (let i = 0; i < out.length; i++) out[i] = Math.min(255, Math.round((tight[i] + wide[i] * 1.5) * 255));
       haloTex = tex(out, false);
     }
+  }
+  // Can a 2D canvas blur? Safari ships ctx.filter switched off, and setting it there only stores the string
+  // (it reads back fine) while drawing stays sharp, so the sign lost its glow on iPhones. Blur a dot and look.
+  function canvasBlurs() {
+    if (!('filter' in CanvasRenderingContext2D.prototype)) return false;
+    const t = document.createElement('canvas'); t.width = t.height = 16;
+    const x = t.getContext('2d', { willReadFrequently: true });
+    x.filter = 'blur(2px)'; x.fillStyle = '#fff'; x.fillRect(7, 7, 2, 2);
+    return x.getImageData(4, 8, 1, 1).data[0] > 0;
   }
   // three box passes each way ~ a gaussian
   function blur(src, w, h, r) {
@@ -402,9 +410,11 @@ export function createScene(canvas, { catalog, tier = 'high', onFrame, reducedMo
   function resize() {
     const r = canvas.getBoundingClientRect();
     // a film renders every pixel it's filmed at (4K, a 3x phone); a visitor's screen is capped to keep it smooth
-    const cap = film ? 4 : tier === 'high' ? 2 : tier === 'mid' ? 1.6 : 0.7;
+    // phones ('mid') draw at the screen's own resolution (3x on an iPhone): at 1.6x the pairs came out soft.
+    // A phone that can't keep up drops the resolution itself (see frame()).
+    const cap = film ? 4 : tier === 'high' ? 2 : tier === 'mid' ? 3 : 0.7;
     let dpr = Math.min(window.devicePixelRatio || 1, cap) * (state.scale || 1);
-    const maxPx = film ? 1.6e7 : tier === 'high' ? 4.2e6 : 2.6e6;
+    const maxPx = film ? 1.6e7 : tier === 'high' ? 4.2e6 : tier === 'mid' ? 3.4e6 : 2.6e6;
     if (r.width * r.height * dpr * dpr > maxPx) dpr = Math.sqrt(maxPx / (r.width * r.height));
     const W = Math.max(2, Math.round(r.width * dpr)), H = Math.max(2, Math.round(r.height * dpr));
     state.w = r.width; state.h = r.height; state.dpr = dpr; state.aspect = r.width / r.height;

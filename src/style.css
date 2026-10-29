@@ -23,6 +23,9 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+/* closed panels are taken out of the page entirely (app.js openLayer/closeLayer), so Safari doesn't take their
+   dark backgrounds for the colour of its bars while they're shut */
+[hidden] { display: none !important; }
 body {
   font: 400 15px/1.5 var(--sans);
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
@@ -418,3 +421,22 @@ html[lang='ka'] .about h2 { font-variation-settings: "wdth" 82; font-weight: 600
   /* no pull-back to wait for: the chrome comes straight in */
   html.revealing .top .nav, html.revealing .top .actions, html.revealing #veil, html.revealing .bottom { transition-delay: 0ms !important; }
 }
+
+/* ------------------------------------------------------------------ the browser's own bars
+   Safari 26 no longer reads theme-color: it colours its status bar and bottom toolbar from a full-width fixed
+   element with a solid background at each edge, else the body. These two hand it the page's own colour at
+   each edge (measured off the wall, the veil included), so the bars carry on from the page instead of framing
+   it in black. They're invisible and do nothing in other browsers. 12px, the bottom one mostly off-screen: the
+   sizes Safari is known to pick up (it skips anything 10px or thinner). */
+.tint { position: fixed; left: 0; right: 0; z-index: 120; height: 12px; opacity: 0; background-color: var(--accent); }
+.tint-top { top: 0; }
+.tint-bottom { bottom: -8px; }
+html.ready .tint-top { background-color: #17181b; }
+html.ready .tint-bottom { background-color: #101214; }
+@media (max-width: 760px), (pointer: coarse) and (max-width: 1024px) and (orientation: portrait) {
+  html.ready .tint-top { background-color: #1b1c1f; }
+  html.ready .tint-bottom { background-color: #121417; }
+}
+html.no-gl .tint { background-color: var(--bg); }
+/* an open panel colours the bars itself, and so does the phone's product sheet at the bottom */
+html.layer .tint, body.focused .tint-bottom { display: none; }
